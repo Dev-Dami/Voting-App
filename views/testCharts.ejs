@@ -7,82 +7,85 @@
     <title>Voting Analytics Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="/css/tailwind.min.css" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.js"></script>
 
     <style>
-body {
-    font-family: 'Inter', sans-serif;
-    background: #ffffff;
-    color: #333;
-}
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #ffffff;
+            color: #333;
+        }
 
-/* HEADER & FOOTER */
-header {
-    background-color: #9f0712;
-    color: white;
-}
+        /* HEADER & FOOTER */
+        header {
+            background-color: #9f0712;
+            color: white;
+        }
 
-footer {
-    background-color: #9f0712;
-    color: white;
-}
+        footer {
+            background-color: #9f0712;
+            color: white;
+        }
 
-/* STAT CARDS */
-.stat-card {
-    background-color: #9f0712;
-    color: white;
-    border-radius: 10px;
-}
+        /* STAT CARDS */
+        .stat-card {
+            background-color: #9f0712;
+            color: white;
+            border-radius: 10px;
+        }
 
-.stat-card-success {
-    background-color: #b2101c; /* slightly lighter red */
-}
+        .stat-card-success {
+            background-color: #b2101c;
+            /* slightly lighter red */
+        }
 
-.stat-card-warning {
-    background-color: #d94b4b; /* middle-tone red */
-}
+        .stat-card-warning {
+            background-color: #d94b4b;
+            /* middle-tone red */
+        }
 
-.stat-card-danger {
-    background-color: #fca5a5; /* light red accent */
-    color: #9f0712;
-}
+        .stat-card-danger {
+            background-color: #fca5a5;
+            /* light red accent */
+            color: #9f0712;
+        }
 
-/* FILTER TABS */
-.filter-tabs {
-    display: flex;
-    background: #ffffff;
-    border-radius: 10px;
-    padding: 4px;
-    border: 1px solid #fca5a5;
-}
+        /* FILTER TABS */
+        .filter-tabs {
+            display: flex;
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 4px;
+            border: 1px solid #fca5a5;
+        }
 
-.filter-tab {
-    flex: 1;
-    padding: 10px;
-    text-align: center;
-    cursor: pointer;
-    border-radius: 6px;
-    font-weight: 500;
-    transition: background 0.2s ease, color 0.2s ease;
-    color: #9f0712;
-}
+        .filter-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: background 0.2s ease, color 0.2s ease;
+            color: #9f0712;
+        }
 
-.filter-tab.active {
-    background: #9f0712;
-    color: white;
-}
+        .filter-tab.active {
+            background: #9f0712;
+            color: white;
+        }
 
-.filter-tab:not(.active):hover {
-    background: #fca5a5;
-    color: #9f0712;
-}
+        .filter-tab:not(.active):hover {
+            background: #fca5a5;
+            color: #9f0712;
+        }
 
-/* CHART CONTAINER */
-.chart-container {
-    position: relative;
-    height: 400px;
-    width: 100%;
-}
+        /* CHART CONTAINER */
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
 
         .glass-effect {
             background: white;
@@ -249,7 +252,7 @@ footer {
         <p class="text-sm">&copy; <%= new Date().getFullYear() %> Voting App. All rights reserved.</p>
     </footer>
 
-    <!-- JS (unchanged) -->
+    <!-- JS -->
     <script>
         const positions = <% - JSON.stringify(positions) %>;
         const charts = {};
@@ -279,9 +282,7 @@ footer {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: {
-                                position: 'bottom'
-                            },
+                            legend: { position: 'bottom' },
                             title: {
                                 display: true,
                                 text: `${position} - Vote Distribution`
