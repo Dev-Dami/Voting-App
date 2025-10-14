@@ -30,7 +30,11 @@ app.use(
       directives: {
         defaultSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://cdnjs.cloudflare.com",
+        ],
         imgSrc: ["'self'", "data:", "blob:"],
         connectSrc: ["'self'"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
@@ -39,7 +43,7 @@ app.use(
         frameSrc: ["'none'"],
       },
     },
-  })
+  }),
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -54,7 +58,7 @@ connectDB();
 app.use("/", express.static(path.join(__dirname, "public")));
 app.use(
   "/chart.js",
-  express.static(path.join(__dirname, "node_modules/chart.js/dist"))
+  express.static(path.join(__dirname, "node_modules/chart.js/dist")),
 );
 
 // Serve candidate images with authorization
@@ -62,7 +66,7 @@ app.get("/candidatesUpload/:filename", verifyToken, (req, res) => {
   const filePath = path.join(
     __dirname,
     "public/candidatesUpload",
-    req.params.filename
+    req.params.filename,
   );
 
   if (
