@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= position %> - Vote Distribution Chart
+    </title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link href="/css/font.css" rel="stylesheet">
+    <link href="/css/style.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(139, 69, 19, 0.1);
+        }
+
+        .hover-lift {
+            transition: box-shadow 0.2s ease;
+        }
+
+        .hover-lift:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 500px;
+            width: 100%;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 font-sans flex flex-col min-h-screen">
+    <header class="bg-gradient-to-r from-red-700 to-red-900 text-white p-6 shadow-lg relative z-10">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center">
+                <svg class="w-8 h-8 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                        d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z">
+                    </path>
+                </svg>
+                <h1 class="text-3xl font-extrabold tracking-tight">
+                    <%= position %> - Vote Distribution
+                </h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                    <span class="text-red-100">Live Chart</span>
+                </div>
+                <a href="/admin/dashboard"
+                    class="bg-white text-red-700 px-6 py-3 rounded-xl shadow-lg hover:bg-gray-100 transition-all transform hover:scale-105 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                            d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                            clip-rule="evenodd"></path>
+                    </svg>
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto p-6">
+        <!-- Position Info Card -->
+        <div class="glass-effect rounded-2xl shadow-xl p-8 mb-8 hover-lift animate-fadeIn">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center">
+                    <div
+                        class="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z"
+                                clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">
+                            <%= position %>
+                        </h2>
+                        <p class="text-gray-600">Vote Distribution Analysis</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="exportChart()"
+                        class="bg-red-800 hover:bg-red-900 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                                clip-rule="evenodd"></path>
+                        </svg>
+                        Export
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="glass-effect rounded-2xl shadow-xl p-8 mb-8 hover-lift animate-fadeIn">
+            <% if (hasVotes) { %>
+                <div class="chart-container">
+                    <canvas id="positionChart"></canvas>
+                </div>
+                <% } else { %>
+                    <div class="text-center py-16">
+                        <svg class="w-24 h-24 text-gray-400 mx-auto mb-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clip-rule="evenodd"></path>
+                        </svg>
+                        <h3 class="text-2xl font-semibold text-gray-600 mb-4">No Votes Yet</h3>
+                        <p class="text-gray-500 text-lg mb-2">No votes have been recorded for the <%= position %>
+                                position yet.</p>
+                        <p class="text-gray-400">The chart will appear here once students start voting.</p>
+                    </div>
+                    <% } %>
+        </div>
+
+        <!-- Chart Statistics -->
+        <% if (hasVotes) { %>
+            <div class="glass-effect rounded-2xl shadow-xl p-8 hover-lift animate-fadeIn">
+                <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <svg class="w-6 h-6 mr-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                            d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clip-rule="evenodd"></path>
+                    </svg>
+                    Vote Statistics
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-red-800 rounded-xl p-6 text-white">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-blue-100 text-sm font-medium">Total Votes</p>
+                                <p class="text-3xl font-bold" id="totalVotes">0</p>
+                            </div>
+                            <svg class="w-8 h-8 text-blue-200" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"></path>
+                                <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="bg-red-700 rounded-xl p-6 text-white">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-green-100 text-sm font-medium">Leading Candidate</p>
+                                <p class="text-lg font-bold" id="leadingCandidate">N/A</p>
+                            </div>
+                            <svg class="w-8 h-8 text-green-200" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
+                                    clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="bg-red-600 rounded-xl p-6 text-white">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-purple-100 text-sm font-medium">Candidates</p>
+                                <p class="text-3xl font-bold" id="candidateCount">0</p>
+                            </div>
+                            <svg class="w-8 h-8 text-purple-200" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                    clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <% } %>
+    </main>
+
+    <footer class="bg-gray-800 text-white text-center py-4 flex-shrink-0">
+        <p class="text-sm font-medium">&copy; <%= new Date().getFullYear() %> Voting App. All rights reserved.</p>
+        <p class="text-xs mt-1 opacity-80">Made by Damilare Osibanjo</p>
+    </footer>
+
+    <script>
+        const chartData = <% - JSON.stringify(chartData) %>;
+        const hasVotes = <% - JSON.stringify(hasVotes) %>;
+        const position = '<%= position %>';
+
+        if (hasVotes) {
+            const ctx = document.getElementById('positionChart').getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'doughnut',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                font: {
+                                    family: 'Inter',
+                                    size: 14
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: `${position} - Vote Distribution`,
+                            font: {
+                                family: 'Inter',
+                                size: 20,
+                                weight: 'bold'
+                            },
+                            color: '#374151'
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: 'white',
+                            bodyColor: 'white',
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1
+                        }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true,
+                        duration: 2000
+                    }
+                }
+            });
+
+            // Update statistics
+            const totalVotes = chartData.datasets[0].data.reduce((sum, votes) => sum + votes, 0);
+            const maxVotes = Math.max(...chartData.datasets[0].data);
+            const leadingIndex = chartData.datasets[0].data.indexOf(maxVotes);
+            const leadingCandidate = chartData.labels[leadingIndex];
+            const candidateCount = chartData.labels.length;
+
+            document.getElementById('totalVotes').textContent = totalVotes;
+            document.getElementById('leadingCandidate').textContent = leadingCandidate;
+            document.getElementById('candidateCount').textContent = candidateCount;
+        }
+
+        function exportChart() {
+            const data = {
+                position: position,
+                chartData: chartData,
+                hasVotes: hasVotes,
+                exportDate: new Date().toISOString(),
+                summary: {
+                    totalVotes: hasVotes ? chartData.datasets[0].data.reduce((sum, votes) => sum + votes, 0) : 0,
+                    candidateCount: hasVotes ? chartData.labels.length : 0
+                }
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chart-${position.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Real-time updates via Socket.IO
+        const socket = io();
+        socket.on('voteUpdate', function (data) {
+            if (data.position === position) {
+                // Refresh page to get latest data
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+
+</html>

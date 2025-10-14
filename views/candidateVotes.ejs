@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Votes for <%= candidate.name %>
+    </title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link href="/css/font.css" rel="stylesheet">
+    <link href="/css/style.min.css" rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(139, 69, 19, 0.1);
+        }
+
+        .hover-lift {
+            transition: box-shadow 0.2s ease;
+        }
+
+        .hover-lift:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 font-sans min-h-screen">
+    <header class="bg-gradient-to-r from-red-700 to-red-900 text-white p-6 shadow-lg relative z-10">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center">
+                <svg class="w-8 h-8 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                        clip-rule="evenodd"></path>
+                </svg>
+                <h1 class="text-3xl font-extrabold tracking-tight">Votes for <%= candidate.name %>
+                </h1>
+            </div>
+            <a href="/admin/dashboard"
+                class="bg-white text-red-700 px-6 py-3 rounded-xl shadow-lg hover:bg-gray-100 transition-all transform hover:scale-105 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                        d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                        clip-rule="evenodd"></path>
+                </svg>
+                Back to Dashboard
+            </a>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-6 max-w-6xl">
+        <!-- Candidate Info Card -->
+        <div class="glass-effect rounded-2xl shadow-xl p-8 mb-8 hover-lift">
+            <div class="flex items-center">
+                <div
+                    class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-6">
+                    <span class="text-white font-bold text-2xl">
+                        <%= candidate.name.charAt(0) %>
+                    </span>
+                </div>
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">
+                        <%= candidate.name %>
+                    </h2>
+                    <p class="text-lg text-gray-600 mb-4">Position: <span class="font-semibold text-purple-600">
+                            <%= candidate.position %>
+                        </span></p>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center bg-green-100 text-green-800 px-4 py-2 rounded-full">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"></path>
+                                <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"></path>
+                            </svg>
+                            <span class="font-semibold">
+                                <%= votes.length %> Total Votes
+                            </span>
+                        </div>
+                        <div class="flex items-center bg-blue-100 text-blue-800 px-4 py-2 rounded-full">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                                    clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="font-semibold">Voting History</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Voters List -->
+        <div class="glass-effect rounded-2xl shadow-xl p-8 hover-lift">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold text-gray-800 flex items-center">
+                    <svg class="w-6 h-6 mr-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                            d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z">
+                        </path>
+                    </svg>
+                    Voter Details
+                </h3>
+                <div class="flex items-center space-x-2">
+                    <button onclick="exportVotes()"
+                        class="bg-red-800 hover:bg-red-900 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                                clip-rule="evenodd"></path>
+                        </svg>
+                        Export
+                    </button>
+                </div>
+            </div>
+
+            <% if (votes.length> 0) { %>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr class="text-left text-gray-600">
+                                    <th class="p-4 font-semibold">#</th>
+                                    <th class="p-4 font-semibold">Student ID</th>
+                                    <th class="p-4 font-semibold">Vote Date</th>
+                                    <th class="p-4 font-semibold">Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% votes.forEach((vote, index)=> { %>
+                                    <tr
+                                        class="border-b border-gray-100 hover:bg-blue-50 transition-colors duration-200">
+                                        <td class="p-4">
+                                            <div
+                                                class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                                <span class="text-blue-600 font-semibold text-sm">
+                                                    <%= index + 1 %>
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="p-4">
+                                            <div class="flex items-center">
+                                                <div
+                                                    class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-3">
+                                                    <svg class="w-5 h-5 text-white" fill="currentColor"
+                                                        viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd"
+                                                            d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                                            clip-rule="evenodd"></path>
+                                                    </svg>
+                                                </div>
+                                                <span class="font-semibold text-gray-800">
+                                                    <%= vote.studentId ? vote.studentId.studentId : "Unknown" %>
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="p-4">
+                                            <span class="text-gray-700">
+                                                <%= vote.createdAt ? new Date(vote.createdAt).toLocaleDateString()
+                                                    : "N/A" %>
+                                            </span>
+                                        </td>
+                                        <td class="p-4">
+                                            <span class="text-gray-500 text-sm">
+                                                <%= vote.createdAt ? new Date(vote.createdAt).toLocaleTimeString()
+                                                    : "N/A" %>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <% } else { %>
+                    <div class="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-100">
+                        <svg class="w-20 h-20 text-gray-400 mx-auto mb-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                clip-rule="evenodd"></path>
+                        </svg>
+                        <h3 class="text-xl font-semibold text-gray-600 mb-2">No Votes Yet</h3>
+                        <p class="text-gray-500">No students have voted for <%= candidate.name %> yet.</p>
+                        <p class="text-gray-400 text-sm mt-2">Votes will appear here once students start voting.</p>
+                    </div>
+                    <% } %>
+        </div>
+    </main>
+
+    <script>
+        function exportVotes() {
+            const votes = <% - JSON.stringify(votes) %>;
+            const candidate = <% - JSON.stringify(candidate) %>;
+
+            const data = {
+                candidate: candidate,
+                votes: votes,
+                exportDate: new Date().toISOString(),
+                summary: {
+                    totalVotes: votes.length,
+                    candidateName: candidate.name,
+                    position: candidate.position
+                }
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `votes-${candidate.name.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+
+</html>

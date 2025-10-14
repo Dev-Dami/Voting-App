@@ -1,0 +1,4 @@
+
+*.css linguist-vendored
+
+*.ejs linguist-language=JavaScript

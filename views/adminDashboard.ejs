@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link href="/css/tailwind.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 font-sans min-h-screen">
+    <header class="bg-gradient-to-r from-red-700 to-red-900 text-white p-4 shadow-lg relative z-10">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="text-2xl font-extrabold tracking-tight flex items-center">
+                <span>Admin Dashboard</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="mr-6">
+                    <span class="text-red-100">Status:</span>
+                    <span class="font-bold text-white">
+                        <%= election.status %>
+                    </span>
+                </div>
+                <% if (election.status==="running" && election.endTime) { %>
+                    <div id="timer" class="text-lg text-red-100">Time Left: <span id="countdown"
+                            class="font-bold text-white"></span></div>
+                    <% } else if (election.status==="pending" && election.startTime && election.endTime) { %>
+                        <div class="text-lg text-red-100">Starts: <span class="font-bold text-white">
+                                <%= new Date(election.startTime).toLocaleString() %>
+                            </span></div>
+                        <div class="text-lg text-red-100">Ends: <span class="font-bold text-white">
+                                <%= new Date(election.endTime).toLocaleString() %>
+                            </span></div>
+                        <% } else if (election.status==="ended" && election.endTime) { %>
+                            <div class="text-lg text-red-100">Ended: <span class="font-bold text-white">
+                                    <%= new Date(election.endTime).toLocaleString() %>
+                                </span></div>
+                            <% } %>
+                                <form action="/admin/logout" method="POST">
+                                    <button type="submit"
+                                        class="bg-white text-red-700 px-5 py-2 rounded-full shadow-md hover:bg-gray-100 transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50">
+                                        Logout
+                                    </button>
+                                </form>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-6">
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-red-800 text-white rounded-lg p-6">
+                <div class="text-center">
+                    <p class="text-red-100 text-sm font-medium">Students</p>
+                    <p class="text-3xl font-bold">
+                        <%= students.length %>
+                    </p>
+                </div>
+            </div>
+            <div class="bg-red-700 text-white rounded-lg p-6">
+                <div class="text-center">
+                    <p class="text-red-100 text-sm font-medium">Candidates</p>
+                    <p class="text-3xl font-bold">
+                        <%= candidates.length %>
+                    </p>
+                </div>
+            </div>
+            <div class="bg-red-600 text-white rounded-lg p-6">
+                <div class="text-center">
+                    <p class="text-red-100 text-sm font-medium">Total Votes</p>
+                    <p class="text-3xl font-bold">
+                        <%= voteLogs.length %>
+                    </p>
+                </div>
+            </div>
+            <div class="bg-red-500 text-white rounded-lg p-6">
+                <div class="text-center">
+                    <p class="text-red-100 text-sm font-medium">Voting Rate</p>
+                    <p class="text-3xl font-bold">
+                        <%= students.length> 0 ? Math.round((voteLogs.length / students.length) * 100) : 0 %>%
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Election Controls -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Election Controls</h2>
+            <div class="flex gap-4 flex-wrap items-center">
+                <% if (election.status==="pending" ) { %>
+                    <form action="/admin/election/start" method="POST" class="flex items-center gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+                            <input type="datetime-local" name="endTime" required
+                                class="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-red-500" />
+                        </div>
+                        <button type="submit" class="bg-red-800 hover:bg-red-900 text-white px-6 py-3 rounded-lg">
+                            Start Election
+                        </button>
+                    </form>
+                    <% } else if (election.status==="running" ) { %>
+                        <form action="/admin/election/end" method="POST">
+                            <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-6 py-3 rounded-lg">
+                                End Election
+                            </button>
+                        </form>
+                        <% } else if (election.status==="ended" ) { %>
+                            <form action="/admin/election/reset" method="POST">
+                                <button type="submit"
+                                    class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg">
+                                    Reset Election
+                                </button>
+                            </form>
+                            <% } %>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <!-- Left Column -->
+            <div class="xl:col-span-2">
+
+                <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Candidates by Position</h2>
+                    <div class="space-y-8">
+                        <% positions.forEach(position=> { %>
+                            <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                                <h3 class="text-lg font-bold text-gray-800 mb-3">
+                                    <%= position==="Custom" ? candidates.find(c=> c.position === position &&
+                                        c.customPosition).customPosition : position %>
+                                </h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    <% candidates.filter(c=> c.position === position).forEach(candidate => { %>
+                                        <div class="bg-white p-4 rounded-lg border border-gray-200">
+                                            <div class="text-center">
+                                                <img src="<%= candidate.image %>" alt="<%= candidate.name %>"
+                                                    class="w-16 h-16 rounded-full object-cover mx-auto mb-3">
+                                                <h4 class="font-bold text-gray-800 mb-1">
+                                                    <%= candidate.name %>
+                                                </h4>
+                                                <p class="text-sm text-gray-600 mb-3">
+                                                    <%= candidate.votes %> votes
+                                                </p>
+                                                <div class="flex space-x-2">
+                                                    <a href="/admin/candidate/<%= candidate._id %>/votes"
+                                                        class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">
+                                                        View
+                                                    </a>
+                                                    <form action="/admin/candidates/delete/<%= candidate._id %>"
+                                                        method="POST"
+                                                        onsubmit="return confirm('Are you sure you want to delete this candidate?');">
+                                                        <button type="submit"
+                                                            class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">
+                                                            Delete
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <% }) %>
+                                </div>
+                            </div>
+                            <% }) %>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Recent Voting Activity</h2>
+                    <div class="space-y-3">
+                        <% voteLogs.slice(0, 10).forEach((log, index)=> { %>
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <p class="font-medium text-gray-800">
+                                            <%= log.studentId ? log.studentId.studentId : "Unknown" %>
+                                        </p>
+                                        <p class="text-sm text-gray-600">
+                                            Voted for <%= log.candidateId ? log.candidateId.name : "Deleted Candidate"
+                                                %>
+                                        </p>
+                                    </div>
+                                    <span class="text-xs text-gray-500">
+                                        <%= log.createdAt ? new Date(log.createdAt).toLocaleTimeString() : "N/A" %>
+                                    </span>
+                                </div>
+                            </div>
+                            <% }) %>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="space-y-6">
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Quick Actions</h2>
+                    <div class="space-y-3">
+                        <a href="/admin/test-charts"
+                            class="block w-full bg-red-800 hover:bg-red-900 text-white px-4 py-3 rounded-lg text-center">
+                            View Analytics
+                        </a>
+                        <button onclick="exportData()"
+                            class="block w-full bg-red-700 hover:bg-red-800 text-white px-4 py-3 rounded-lg">
+                            Export Data
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Manage Students -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Manage Students</h2>
+                    <form action="/admin/students/add" method="POST" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
+                            <input type="text" name="studentId" placeholder="Enter Student ID" required
+                                class="border border-gray-300 rounded-lg w-full p-3 focus:outline-none focus:ring-2 focus:ring-red-500" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <input type="password" name="password" placeholder="Enter Password" required
+                                class="border border-gray-300 rounded-lg w-full p-3 focus:outline-none focus:ring-2 focus:ring-red-500" />
+                        </div>
+                        <button type="submit"
+                            class="w-full bg-red-800 hover:bg-red-900 text-white px-4 py-3 rounded-lg">
+                            Add Student
+                        </button>
+                    </form>
+                    <div class="mt-4">
+                        <h3 class="font-semibold text-gray-800 mb-3">Registered Students (<%= students.length %>)</h3>
+                        <div class="space-y-2 max-h-48 overflow-y-auto">
+                            <% students.forEach(student=> { %>
+                                <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+                                    <span class="font-medium text-gray-800">
+                                        <%= student.studentId %>
+                                    </span>
+                                    <form action="/admin/students/delete/<%= student._id %>" method="POST">
+                                        <button type="submit"
+                                            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                                <% }) %>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manage Candidates -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Manage Candidates</h2>
+                    <form action="/admin/candidates/add" method="POST" class="space-y-4" enctype="multipart/form-data">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Candidate Name</label>
+                            <input type="text" name="name" placeholder="Enter Candidate Name" required
+                                class="border border-gray-300 rounded-lg w-full p-3 focus:outline-none focus:ring-2 focus:ring-red-500" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Position</label>
+                            <select name="position" id="positionSelect" required
+                                class="border border-gray-300 rounded-lg w-full p-3 focus:outline-none focus:ring-2 focus:ring-red-500">
+                                <option value="Head Boy">Head Boy</option>
+                                <option value="Head Girl">Head Girl</option>
+                                <option value="Sports Prefect">Sports Prefect</option>
+                                <option value="Libary Prefect">Libary Prefect</option>
+                                <option value="Laboratory Prefect">Laboratory Prefect</option>
+                                <option value="Time Keeper">Time Keeper</option>
+                                <option value="Dining-hall Prefect">Dining-hall Prefect</option>
+                                <option value="Labour Prefect">Labour Prefect</option>
+                                <option value="Social Prefect">Social Prefect</option>
+                                <option value="Custom">Custom</option>
+                            </select>
+                        </div>
+                        <div id="customPositionDiv" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Custom Position</label>
+                            <input type="text" name="customPosition" id="customPositionInput"
+                                placeholder="Enter Custom Position"
+                                class="border border-gray-300 rounded-lg w-full p-3 focus:outline-none focus:ring-2 focus:ring-red-500" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Profile Image</label>
+                            <input type="file" name="image" accept="image/*"
+                                class="border border-gray-300 rounded-lg w-full p-3 focus:outline-none focus:ring-2 focus:ring-red-500" />
+                        </div>
+                        <button type="submit"
+                            class="w-full bg-red-800 hover:bg-red-900 text-white px-4 py-3 rounded-lg">
+                            Add Candidate
+                        </button>
+                    </form>
+                    <div class="mt-4">
+                        <h3 class="font-semibold text-gray-800 mb-3">All Candidates (<%= candidates.length %>)</h3>
+                        <div class="space-y-2 max-h-48 overflow-y-auto">
+                            <% candidates.forEach(candidate=> { %>
+                                <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+                                    <div class="flex items-center">
+                                        <img src="<%= candidate.image %>" alt="<%= candidate.name %>"
+                                            class="w-8 h-8 rounded-full object-cover mr-3">
+                                        <div>
+                                            <span class="font-medium text-gray-800">
+                                                <%= candidate.name %>
+                                            </span>
+                                            <p class="text-xs text-gray-500">
+                                                <%= candidate.position %>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <form action="/admin/candidates/delete/<%= candidate._id %>" method="POST">
+                                        <button type="submit"
+                                            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                                <% }) %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Custom position toggle
+        document.getElementById('positionSelect').addEventListener('change', function () {
+            const customDiv = document.getElementById('customPositionDiv');
+            if (this.value === 'Custom') {
+                customDiv.classList.remove('hidden');
+            } else {
+                customDiv.classList.add('hidden');
+            }
+        });
+
+        // Export data function
+        function exportData() {
+            const data = {
+                students: <%= JSON.stringify(students) %>,
+                candidates: <%= JSON.stringify(candidates) %>,
+                voteLogs: <%= JSON.stringify(voteLogs) %>,
+                election: <%= JSON.stringify(election) %>,
+                exportDate: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `voting-data-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+
+</html>

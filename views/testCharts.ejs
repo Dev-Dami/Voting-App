@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voting Analytics Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="/css/tailwind.min.css" rel="stylesheet" />
+    <script src="/js/chart.js"></script>
+
+    <style>
+body {
+    font-family: 'Inter', sans-serif;
+    background: #ffffff;
+    color: #333;
+}
+
+/* HEADER & FOOTER */
+header {
+    background-color: #9f0712;
+    color: white;
+}
+
+footer {
+    background-color: #9f0712;
+    color: white;
+}
+
+/* STAT CARDS */
+.stat-card {
+    background-color: #9f0712;
+    color: white;
+    border-radius: 10px;
+}
+
+.stat-card-success {
+    background-color: #b2101c; /* slightly lighter red */
+}
+
+.stat-card-warning {
+    background-color: #d94b4b; /* middle-tone red */
+}
+
+.stat-card-danger {
+    background-color: #fca5a5; /* light red accent */
+    color: #9f0712;
+}
+
+/* FILTER TABS */
+.filter-tabs {
+    display: flex;
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 4px;
+    border: 1px solid #fca5a5;
+}
+
+.filter-tab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: background 0.2s ease, color 0.2s ease;
+    color: #9f0712;
+}
+
+.filter-tab.active {
+    background: #9f0712;
+    color: white;
+}
+
+.filter-tab:not(.active):hover {
+    background: #fca5a5;
+    color: #9f0712;
+}
+
+/* CHART CONTAINER */
+.chart-container {
+    position: relative;
+    height: 400px;
+    width: 100%;
+}
+
+        .glass-effect {
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+        }
+
+        footer {
+            background-color: #800020;
+        }
+
+        button {
+            transition: background 0.2s ease;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+
+<body class="font-sans flex flex-col min-h-screen">
+
+    <!-- Header -->
+    <header class="text-white p-6 shadow">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center">
+                <svg class="w-8 h-8 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                        d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z">
+                    </path>
+                </svg>
+                <h1 class="text-2xl font-bold">Voting Analytics Dashboard</h1>
+            </div>
+            <a href="/admin/dashboard"
+                class="bg-white text-black px-4 py-2 rounded-md hover:bg-gray-100 flex items-center">
+                Back to Dashboard
+            </a>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto p-6">
+        <!-- Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card p-6">
+                <p class="text-sm opacity-80">Total Positions</p>
+                <p class="text-3xl font-bold"><%= Object.keys(positions).length %></p>
+            </div>
+            <div class="stat-card-success p-6">
+                <p class="text-sm opacity-80">Total Candidates</p>
+                <p class="text-3xl font-bold"><%= Object.values(positions).flat().length %></p>
+            </div>
+            <div class="stat-card-warning p-6">
+                <p class="text-sm opacity-80">Total Votes</p>
+                <p class="text-3xl font-bold">
+                    <%= Object.values(positions).flat().reduce((sum, c)=> sum + c.votes.length, 0) %>
+                </p>
+            </div>
+            <div class="stat-card-danger p-6">
+                <p class="text-sm opacity-80">Most Popular</p>
+                <p class="text-lg font-bold">
+                    <% let maxVotes=0; let popularCandidate='' ;
+                    Object.values(positions).flat().forEach(candidate=> {
+                    if (candidate.votes.length > maxVotes) {
+                        maxVotes = candidate.votes.length;
+                        popularCandidate = candidate.name;
+                    }}); %>
+                    <%= popularCandidate || 'N/A' %>
+                </p>
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="glass-effect p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">Filter by Position</h2>
+                <button onclick="exportAnalytics()" class="bg-gray text-white px-4 py-2 rounded-md">
+                    Export
+                </button>
+            </div>
+            <div class="filter-tabs">
+                <div class="filter-tab active" onclick="filterByPosition('all')">All Positions</div>
+                <% Object.keys(positions).forEach(position=> { %>
+                    <div class="filter-tab" onclick="filterByPosition('<%= position %>')">
+                        <%= position %>
+                    </div>
+                <% }) %>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div id="chartsContainer">
+            <% for (const position in positions) { %>
+                <div class="position-chart glass-effect p-6 mb-8" data-position="<%= position %>">
+                    <div class="flex justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-gray-800"><%= position %></h2>
+                        <span class="text-sm bg-gray-100 px-2 py-1 rounded-md">
+                            <%= positions[position].length %> candidates
+                        </span>
+                    </div>
+
+                    <% const hasVotes=positions[position].some(c=> c.votes.length > 0); %>
+                    <% if (hasVotes) { %>
+                        <div class="chart-container mb-6">
+                            <canvas id="chart-<%= position.replace(/\s+/g, '-') %>"></canvas>
+                        </div>
+                    <% } else { %>
+                        <div class="text-center py-8 bg-gray-50 rounded-md text-gray-600">
+                            No votes recorded for this position yet.
+                        </div>
+                    <% } %>
+
+                    <!-- Candidate List -->
+                    <div class="bg-white rounded-md border border-gray-200">
+                        <div class="p-3 bg-gray-50 border-b">
+                            <h3 class="font-semibold text-gray-800 text-sm">Candidate Details & Voters</h3>
+                        </div>
+                        <div class="max-h-96 overflow-y-auto">
+                            <% positions[position].forEach(candidate=> { %>
+                                <div class="p-4 border-b border-gray-100">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <h4 class="font-semibold text-gray-800"><%= candidate.name %></h4>
+                                            <p class="text-sm text-gray-600">
+                                                <% if (candidate.votes.length> 0) { %>
+                                                    <span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs">
+                                                        <%= candidate.votes.length %> votes
+                                                    </span>
+                                                <% } else { %>
+                                                    <span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">
+                                                        No votes yet
+                                                    </span>
+                                                <% } %>
+                                            </p>
+                                        </div>
+                                        <% if (candidate.votes.length> 0) { %>
+                                            <button onclick="toggleVoters('<%= candidate.name.replace(/\s+/g, '-') %>')" class="text-[#800020] text-sm font-medium">
+                                                View Voters (<%= candidate.votes.length %>)
+                                            </button>
+                                        <% } %>
+                                    </div>
+                                    <div id="voters-<%= candidate.name.replace(/\s+/g, '-') %>" class="hidden mt-3 pl-4">
+                                        <div class="bg-gray-50 rounded-md p-3">
+                                            <h5 class="font-semibold text-gray-700 mb-2">Voters:</h5>
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                                <% candidate.votes.forEach(voter=> { %>
+                                                    <div class="flex items-center bg-white rounded-md p-2 border text-sm">
+                                                        <span class="text-gray-700"><%= voter %></span>
+                                                    </div>
+                                                <% }) %>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% }); %>
+                        </div>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+    </main>
+
+    <footer class="text-white text-center py-4">
+        <p class="text-sm">&copy; <%= new Date().getFullYear() %> Voting App. All rights reserved.</p>
+    </footer>
+
+    <!-- JS (unchanged) -->
+    <script>
+        const positions = <% - JSON.stringify(positions) %>;
+        const charts = {};
+
+        document.addEventListener("DOMContentLoaded", function () {
+            for (const position in positions) {
+                const canvasId = `chart-${position.replace(/\s+/g, '-')}`;
+                const ctx = document.getElementById(canvasId);
+                if (!ctx) continue;
+
+                const candidates = positions[position];
+                const labels = candidates.map(c => c.name);
+                const data = candidates.map(c => c.votes.length);
+
+                charts[position] = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: ['#800020', '#a03030', '#b44b4b', '#d16d6d', '#e08a8a', '#f2b6b6'],
+                            borderWidth: 1,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            title: {
+                                display: true,
+                                text: `${position} - Vote Distribution`
+                            }
+                        }
+                    }
+                });
+            }
+        });
+
+        function filterByPosition(position) {
+            document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            document.querySelectorAll('.position-chart').forEach(chart => {
+                chart.style.display = (position === 'all' || chart.dataset.position === position) ? 'block' : 'none';
+            });
+        }
+
+        function toggleVoters(candidateName) {
+            const votersDiv = document.getElementById(`voters-${candidateName}`);
+            votersDiv.classList.toggle('hidden');
+        }
+
+        function exportAnalytics() {
+            const data = {
+                positions: positions,
+                exportDate: new Date().toISOString(),
+                summary: {
+                    totalPositions: Object.keys(positions).length,
+                    totalCandidates: Object.values(positions).flat().length,
+                    totalVotes: Object.values(positions).flat().reduce((sum, c) => sum + c.votes.length, 0)
+                }
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `voting-analytics-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        const socket = io();
+        socket.on('voteUpdate', function (data) {
+            if (charts[data.position]) {
+                const candidates = positions[data.position];
+                const labels = candidates.map(c => c.name);
+                const newData = candidates.map(c => c.votes.length);
+                charts[data.position].data.labels = labels;
+                charts[data.position].data.datasets[0].data = newData;
+                charts[data.position].update();
+            }
+            setTimeout(() => location.reload(), 2000);
+        });
+
+        setInterval(() => location.reload(), 60000);
+    </script>
+</body>
+</html>
