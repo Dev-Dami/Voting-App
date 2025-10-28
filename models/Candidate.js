@@ -14,6 +14,8 @@ const candidateSchema = new mongoose.Schema({
       "Dining-hall Prefect",
       "Labour Prefect",
       "Social Prefect",
+      "Health Prefect",
+      "Chapel Prefect",
       "Custom",
     ],
     required: true,
