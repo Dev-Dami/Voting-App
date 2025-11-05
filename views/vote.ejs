@@ -81,6 +81,27 @@
         .position-card:hover {
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
         }
+
+        /* Notification div */
+        #notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 0, 0, 0.9);
+            color: white;
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-weight: 500;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            z-index: 2000;
+        }
+
+        #notification.show {
+            opacity: 1;
+            visibility: visible;
+        }
     </style>
 </head>
 
@@ -181,11 +202,13 @@
         </div>
     </div>
 
+    <!-- Notification -->
+    <div id="notification"></div>
+
     <footer class="bg-gray-800 text-white text-center py-4 flex-shrink-0">
         <p class="text-sm font-medium">&copy; <%= new Date().getFullYear() %> Voting App. All rights reserved.</p>
         <p class="text-xs mt-1 opacity-80">Made by Damilare Osibanjo</p>
     </footer>
-
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -197,6 +220,19 @@
             const cancelReviewBtn = document.getElementById('cancelReviewBtn');
             const confirmVoteBtn = document.getElementById('confirmVoteBtn');
             const voteSummary = document.getElementById('voteSummary');
+            const notification = document.getElementById('notification');
+
+            let submitClicked = false;
+            let timeoutDuration = 2000; // initial 2 seconds
+
+            function showNotification(message) {
+                notification.textContent = message;
+                notification.classList.add('show');
+
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 2000);
+            }
 
             // Function to open slide-out panel
             function openPanel() {
@@ -262,8 +298,26 @@
             cancelReviewBtn.addEventListener('click', closePanel);
             overlay.addEventListener('click', closePanel);
 
-            // Confirm vote
+            // Confirm vote (with single submission protection)
             confirmVoteBtn.addEventListener('click', function () {
+                if (submitClicked) {
+                    showNotification(`Vote already submitted! Please wait ${timeoutDuration / 1000}s...`);
+                    timeoutDuration += 2000; // add 2s per click if not reloaded
+                    return;
+                }
+
+                submitClicked = true;
+                confirmVoteBtn.disabled = true;
+                confirmVoteBtn.classList.add('opacity-70', 'cursor-not-allowed');
+                showNotification("Submitting your vote...");
+
+                // Automatically allow re-click after timeout if page doesn't reload
+                setTimeout(() => {
+                    submitClicked = false;
+                    confirmVoteBtn.disabled = false;
+                    confirmVoteBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+                }, timeoutDuration);
+
                 voteForm.submit();
             });
 
