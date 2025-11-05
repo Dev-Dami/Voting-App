@@ -118,3 +118,8 @@ The application requires the following environment variables to be set in a `.en
 | `PORT` | The port on which the server will run. Defaults to `5000`. |
 | `MONGO_URI` | The connection string for the MongoDB database. |
 | `JWT_SECRET` | A secret key used for signing and verifying JSON Web Tokens. |
+
+
+
+## config
+./config
