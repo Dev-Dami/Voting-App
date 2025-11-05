@@ -22,7 +22,7 @@ Represents a student who can vote in the election.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `studentId` | String | The unique identifier for the student. | 
+| `studentId` | String | The unique identifier for the student. |
 | `password` | String | The student's password. It is hashed using bcrypt before being saved to the database. |
 | `role` | String | The role of the user, which can be `student` or `teacher`. Defaults to `student`. |
 | `hasVoted` | Boolean | A flag to indicate if the student has already cast their vote. Defaults to `false`. |
@@ -121,5 +121,4 @@ The application requires the following environment variables to be set in a `.en
 
 
 
-## config
-./config
+[Go to Configuration Guide](./config.md)
