@@ -43,10 +43,19 @@ document.addEventListener("DOMContentLoaded", function () {
       const selectedRadio = voteForm.querySelector(
         `input[name="${inputName}"]:checked`,
       );
+
       if (!selectedRadio) {
         allVoted = false;
       } else {
-        selections[position] = selectedRadio.dataset.candidateName;
+        // Store both name and image from the radio input
+        const candidateName = selectedRadio.dataset.candidateName;
+        const candidateImage = selectedRadio
+          .closest("label")
+          .querySelector("img").src;
+        selections[position] = {
+          name: candidateName,
+          image: candidateImage,
+        };
       }
     });
 
@@ -57,22 +66,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
     voteSummary.innerHTML = "";
     for (const position in selections) {
+      const candidate = selections[position];
       const summaryItem = document.createElement("div");
       summaryItem.className =
         "bg-gray-50 rounded-lg p-4 border border-gray-200";
+
       summaryItem.innerHTML = `
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h4 class="font-semibold text-gray-800">${position}</h4>
-                        <p class="text-gray-600 mt-1">${selections[position]}</p>
-                    </div>
-                    <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                        <svg class="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                    </div>
-                </div>
-            `;
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-4">
+            <img src="${candidate.image}" alt="${candidate.name}" class="w-12 h-12 rounded-full object-cover">
+            <div>
+              <h4 class="font-semibold text-gray-800">${position}</h4>
+              <p class="text-gray-600 mt-1">${candidate.name}</p>
+            </div>
+          </div>
+          <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+            <svg class="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+            </svg>
+          </div>
+        </div>
+      `;
+
       voteSummary.appendChild(summaryItem);
     }
 
