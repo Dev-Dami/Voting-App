@@ -62,24 +62,25 @@
             visibility: visible;
         }
 
-        /* Vertical layout for positions */
+        /* Expanded responsive grid for positions */
         .positions-container {
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-            padding: 1rem 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2.5rem;
+            padding: 2rem;
         }
 
         .position-card {
-            width: 100%;
             background: white;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-            transition: all 0.2s ease-in-out;
+            border-radius: 1rem;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            transition: all 0.25s ease-in-out;
         }
 
         .position-card:hover {
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.1);
         }
 
         /* Notification div */
@@ -106,8 +107,8 @@
 </head>
 
 <body class="bg-gray-50 font-sans flex flex-col min-h-screen">
-    <header class="bg-gradient-to-r from-red-700 to-red-900 text-white py-6 shadow-md relative z-10">
-        <div class="container mx-auto px-6 flex justify-between items-center">
+    <header class="bg-gradient-to-r from-red-700 to-red-900 text-white py-8 shadow-md">
+        <div class="container mx-auto max-w-7xl px-10 flex justify-between items-center">
             <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">Cast Your Vote</h1>
             <a href="/login"
                 class="bg-white text-red-700 px-5 py-2 rounded-full shadow-md hover:bg-gray-100 transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50">
@@ -117,12 +118,11 @@
         <p class="text-center mt-2 text-red-200 text-sm md:text-base">Select one candidate for each position</p>
     </header>
 
-    <div class="container mx-auto px-6 py-10 flex-grow">
+    <div class="container mx-auto max-w-7xl px-10 py-12 flex-grow relative z-0">
         <form id="voteForm" action="/vote" method="POST">
             <div class="positions-container no-scrollbar">
                 <% Object.keys(groupedCandidates).forEach(position => { %>
-                    <div
-                        class="position-card bg-white rounded-xl shadow-md hover:shadow-lg transition p-6 border border-gray-200">
+                    <div class="position-card border border-gray-200">
                         <h2 class="text-lg md:text-xl font-bold mb-5 text-red-700 border-b border-gray-200 pb-2">
                             <%= position %>
                         </h2>
@@ -205,7 +205,7 @@
     <!-- Notification -->
     <div id="notification"></div>
 
-    <footer class="bg-gray-800 text-white text-center py-4 flex-shrink-0">
+    <footer class="bg-gray-800 text-white text-center py-6 flex-shrink-0">
         <p class="text-sm font-medium">&copy; <%= new Date().getFullYear() %> Voting App. All rights reserved.</p>
         <p class="text-xs mt-1 opacity-80">Made by Damilare Osibanjo</p>
     </footer>
@@ -234,21 +234,18 @@
                 }, 2000);
             }
 
-            // Function to open slide-out panel
             function openPanel() {
                 slideOutPanel.classList.add('open');
                 overlay.classList.add('active');
                 document.body.style.overflow = 'hidden';
             }
 
-            // Function to close slide-out panel
             function closePanel() {
                 slideOutPanel.classList.remove('open');
                 overlay.classList.remove('active');
                 document.body.style.overflow = 'auto';
             }
 
-            // Review vote button click
             reviewVoteBtn.addEventListener('click', function () {
                 const allPositions = JSON.parse('<%- JSON.stringify(Object.keys(groupedCandidates)) %>');
                 let allVoted = true;
@@ -269,7 +266,6 @@
                     return;
                 }
 
-                // Clear and populate vote summary
                 voteSummary.innerHTML = '';
                 for (const position in selections) {
                     const summaryItem = document.createElement('div');
@@ -293,16 +289,14 @@
                 openPanel();
             });
 
-            // Close panel events
             closePanelBtn.addEventListener('click', closePanel);
             cancelReviewBtn.addEventListener('click', closePanel);
             overlay.addEventListener('click', closePanel);
 
-            // Confirm vote (with single submission protection)
             confirmVoteBtn.addEventListener('click', function () {
                 if (submitClicked) {
                     showNotification(`Vote already submitted! Please wait ${timeoutDuration / 1000}s...`);
-                    timeoutDuration += 2000; // add 2s per click if not reloaded
+                    timeoutDuration += 2000;
                     return;
                 }
 
@@ -311,7 +305,6 @@
                 confirmVoteBtn.classList.add('opacity-70', 'cursor-not-allowed');
                 showNotification("Submitting your vote...");
 
-                // Automatically allow re-click after timeout if page doesn't reload
                 setTimeout(() => {
                     submitClicked = false;
                     confirmVoteBtn.disabled = false;
@@ -321,7 +314,6 @@
                 voteForm.submit();
             });
 
-            // Close panel on escape key
             document.addEventListener('keydown', function (event) {
                 if (event.key === 'Escape' && slideOutPanel.classList.contains('open')) {
                     closePanel();
