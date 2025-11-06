@@ -169,17 +169,4 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// Export data functionality
-document.addEventListener('DOMContentLoaded', function() {
-  const exportDataBtn = document.getElementById('export-data-btn');
-  
-  if (exportDataBtn) {
-    exportDataBtn.addEventListener('click', function() {
-      // Show a confirmation dialog
-      if (confirm('Are you sure you want to export all voting data? This may take a moment.')) {
-        // Redirect to the export endpoint
-        window.location.href = '/admin/export-data';
-      }
-    });
-  }
-});
+
