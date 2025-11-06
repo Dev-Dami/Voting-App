@@ -4,52 +4,77 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Dashboard</title>
+    <title>Admin Dashboard - Yeshua High School Election</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link href="/css/tailwind.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
+    <!-- Using CDN for socket.io -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
+        }
+        
+        /* Accessibility improvements */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        
+        .focusable {
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+        }
+        
+        .focusable:focus {
+            outline: 2px solid #4f46e5;
+            outline-offset: 2px;
         }
     </style>
 </head>
 
 <body class="bg-gray-50 font-sans min-h-screen">
-    <header class="bg-gradient-to-r from-red-700 to-red-900 text-white p-4 shadow-lg relative z-10">
+    <header class="bg-gradient-to-r from-red-700 to-red-900 text-white p-4 shadow-lg relative z-10" role="banner">
         <div class="container mx-auto flex justify-between items-center">
             <div class="text-2xl font-extrabold tracking-tight flex items-center">
-                <span>Admin Dashboard</span>
+                <h1>Admin Dashboard</h1>
             </div>
             <div class="flex items-center space-x-4">
                 <div class="mr-6">
                     <span class="text-red-100">Status:</span>
-                    <span class="font-bold text-white">
+                    <span class="font-bold text-white" aria-label="Current election status">
                         <%= election.status %>
                     </span>
                 </div>
                 <% if (election.status==="running" && election.endTime) { %>
                     <div id="timer" class="text-lg text-red-100">Time Left: <span id="countdown"
-                            class="font-bold text-white"></span></div>
+                            class="font-bold text-white" aria-live="polite"></span></div>
                     <% } else if (election.status==="pending" && election.startTime && election.endTime) { %>
-                        <div class="text-lg text-red-100">Starts: <span class="font-bold text-white">
+                        <div class="text-lg text-red-100">Starts: <span class="font-bold text-white" aria-label="Election start time">
                                 <%= new Date(election.startTime).toLocaleString() %>
                             </span></div>
-                        <div class="text-lg text-red-100">Ends: <span class="font-bold text-white">
+                        <div class="text-lg text-red-100">Ends: <span class="font-bold text-white" aria-label="Election end time">
                                 <%= new Date(election.endTime).toLocaleString() %>
                             </span></div>
                         <% } else if (election.status==="ended" && election.endTime) { %>
-                            <div class="text-lg text-red-100">Ended: <span class="font-bold text-white">
+                            <div class="text-lg text-red-100">Ended: <span class="font-bold text-white" aria-label="Election end time">
                                     <%= new Date(election.endTime).toLocaleString() %>
                                 </span></div>
                             <% } %>
                                 <form action="/admin/logout" method="POST">
                                     <button type="submit"
-                                        class="bg-white text-red-700 px-5 py-2 rounded-full shadow-md hover:bg-gray-100 transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50">
+                                        class="bg-white text-red-700 px-5 py-2 rounded-full shadow-md hover:bg-gray-100 transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 focusable"
+                                        aria-label="Logout from admin dashboard">
                                         Logout
                                     </button>
                                 </form>
@@ -80,7 +105,7 @@
                 <div class="text-center">
                     <p class="text-red-100 text-sm font-medium">Total Votes</p>
                     <p class="text-3xl font-bold">
-                        <%= voteLogs.length %>
+                        <%= typeof voteLogsCount !== 'undefined' ? voteLogsCount : voteLogs.length %>
                     </p>
                 </div>
             </div>
@@ -88,7 +113,7 @@
                 <div class="text-center">
                     <p class="text-red-100 text-sm font-medium">Voting Rate</p>
                     <p class="text-3xl font-bold">
-                        <%= students.length> 0 ? Math.round((voteLogs.length / students.length) * 100) : 0 %>%
+                        <%= students.length> 0 ? Math.round(((typeof voteLogsCount !== 'undefined' ? voteLogsCount : voteLogs.length) / students.length) * 100) : 0 %>%
                     </p>
                 </div>
             </div>
@@ -176,25 +201,57 @@
 
                 <div class="bg-white rounded-lg shadow-md p-6 overflow-y-auto">
                     <h2 class="text-xl font-bold text-gray-800 mb-4">Recent Voting Activity</h2>
-                    <div class="space-y-3">
-                        <% voteLogs.slice(0, 10).forEach((log, index)=> { %>
-                            <div class="bg-gray-50 p-3 rounded-lg">
-                                <div class="flex justify-between items-center">
+                    <div class="space-y-3" id="votingActivityList">
+                        <% 
+                            // Group vote logs by student
+                            const votesByStudent = {};
+                            voteLogs.slice(0, 10).forEach(log => {
+                                const studentId = log.studentId ? log.studentId._id : 'unknown';
+                                const studentName = log.studentId ? log.studentId.studentId : 'Unknown';
+                                
+                                if (!votesByStudent[studentId]) {
+                                    votesByStudent[studentId] = {
+                                        studentName: studentName,
+                                        votes: []
+                                    };
+                                }
+                                votesByStudent[studentId].votes.push(log);
+                            });
+                        %>
+                        
+                        <% Object.keys(votesByStudent).forEach(studentId => { %>
+                            <div class="bg-gray-50 rounded-lg">
+                                <div class="p-3 border-b border-gray-200 cursor-pointer flex justify-between items-center student-vote-header" data-student-id="<%= studentId %>">
                                     <div>
-                                        <p class="font-medium text-gray-800">
-                                            <%= log.studentId ? log.studentId.studentId : "Unknown" %>
+                                        <p class="font-medium text-gray-800 flex items-center">
+                                            <%= votesByStudent[studentId].studentName %>
+                                            <svg class="w-4 h-4 ml-2 toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                            </svg>
                                         </p>
-                                        <p class="text-sm text-gray-600">
-                                            Voted for <%= log.candidateId ? log.candidateId.name : "Deleted Candidate"
-                                                %>
-                                        </p>
+                                        <p class="text-xs text-gray-500"><%= votesByStudent[studentId].votes.length %> vote<%= votesByStudent[studentId].votes.length > 1 ? 's' : '' %></p>
                                     </div>
                                     <span class="text-xs text-gray-500">
-                                        <%= log.createdAt ? new Date(log.createdAt).toLocaleTimeString() : "N/A" %>
+                                        <%= votesByStudent[studentId].votes[0].createdAt ? new Date(votesByStudent[studentId].votes[0].createdAt).toLocaleTimeString() : "N/A" %>
                                     </span>
                                 </div>
+                                <div class="student-vote-details hidden px-3 pb-2">
+                                    <% votesByStudent[studentId].votes.forEach(log => { %>
+                                        <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+                                            <p class="text-sm text-gray-600">
+                                                Voted for <%= log.candidateId ? log.candidateId.name : "Deleted Candidate" %>
+                                                <% if (log.position) { %>
+                                                    (<%= log.position %>)
+                                                <% } %>
+                                            </p>
+                                            <span class="text-xs text-gray-400">
+                                                <%= log.createdAt ? new Date(log.createdAt).toLocaleTimeString() : "N/A" %>
+                                            </span>
+                                        </div>
+                                    <% }) %>
+                                </div>
                             </div>
-                            <% }) %>
+                        <% }) %>
                     </div>
                 </div>
             </div>
@@ -205,22 +262,43 @@
                 <div class="bg-white rounded-lg shadow-md p-6">
                     <h2 class="text-xl font-bold text-gray-800 mb-4">Quick Actions</h2>
                     <div class="space-y-3">
-                        <a href="/admin/test-charts"
-                            class="block w-full bg-red-800 hover:bg-red-900 text-white px-4 py-3 rounded-lg text-center">
-                            View Analytics
-                        </a>
-                        <a href="/admin/voters"
-                            class="block w-full bg-red-700 hover:bg-red-800 text-white px-4 py-3 rounded-lg text-center mt-2">
-                            View All Voters & Issues
-                        </a>
-                        <a href="/admin/export-data"
-                            class="block w-full bg-red-700 hover:bg-red-800 text-white px-4 py-3 rounded-lg">
-                            Export JSON Data
-                        </a>
-                        <a href="/admin/view-pdf"
-                            class="block w-full bg-blue-700 hover:bg-blue-800 text-white px-4 py-3 rounded-lg">
-                            View/Export Results (PDF)
-                        </a>
+                        <div class="relative" id="quickActionsDropdown">
+                            <button id="quickActionsButton" 
+                                    class="w-full bg-red-800 hover:bg-red-900 text-white px-4 py-3 rounded-lg text-center focusable"
+                                    aria-haspopup="true" 
+                                    aria-expanded="false"
+                                    aria-controls="quickActionsMenu">
+                                <span>Quick Actions Menu</span>
+                                <svg class="w-5 h-5 ml-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="quickActionsMenu" 
+                                 class="hidden absolute left-0 right-0 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10"
+                                 role="menu" 
+                                 aria-labelledby="quickActionsButton">
+                                <a href="/admin/test-charts"
+                                   class="block px-4 py-3 text-gray-800 hover:bg-gray-100 border-b border-gray-100 last:border-0 focusable"
+                                   role="menuitem">
+                                    View Analytics
+                                </a>
+                                <a href="/admin/voters"
+                                   class="block px-4 py-3 text-gray-800 hover:bg-gray-100 border-b border-gray-100 last:border-0 focusable"
+                                   role="menuitem">
+                                    View All Voters & Issues
+                                </a>
+                                <a href="/admin/export-data"
+                                   class="block px-4 py-3 text-gray-800 hover:bg-gray-100 border-b border-gray-100 last:border-0 focusable"
+                                   role="menuitem">
+                                    Export JSON Data
+                                </a>
+                                <a href="/admin/view-pdf"
+                                   class="block px-4 py-3 text-gray-800 hover:bg-gray-100 border-b border-gray-100 last:border-0 focusable"
+                                   role="menuitem">
+                                    View/Export Results (PDF)
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -422,6 +500,248 @@
             "election": <%- JSON.stringify(election) %>
         }
     </script>
+    
+    <script>
+        // Initialize dropdown functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const quickActionsButton = document.getElementById('quickActionsButton');
+            const quickActionsMenu = document.getElementById('quickActionsMenu');
+            const quickActionsDropdown = document.getElementById('quickActionsDropdown');
+            
+            // Toggle dropdown
+            quickActionsButton.addEventListener('click', function() {
+                const isExpanded = quickActionsButton.getAttribute('aria-expanded') === 'true';
+                quickActionsButton.setAttribute('aria-expanded', !isExpanded);
+                quickActionsMenu.classList.toggle('hidden');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!quickActionsDropdown.contains(event.target)) {
+                    quickActionsButton.setAttribute('aria-expanded', 'false');
+                    quickActionsMenu.classList.add('hidden');
+                }
+            });
+            
+            // Handle keyboard navigation
+            quickActionsButton.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    const isExpanded = quickActionsButton.getAttribute('aria-expanded') === 'true';
+                    quickActionsButton.setAttribute('aria-expanded', !isExpanded);
+                    quickActionsMenu.classList.toggle('hidden');
+                } else if (event.key === 'Escape') {
+                    quickActionsButton.setAttribute('aria-expanded', 'false');
+                    quickActionsMenu.classList.add('hidden');
+                }
+            });
+            
+            // User filter dropdown functionality
+            const userFilterButton = document.getElementById('userFilterButton');
+            const userFilterMenu = document.getElementById('userFilterMenu');
+            const userFilterDropdown = document.getElementById('userFilterDropdown');
+            const userFilterSearch = document.getElementById('userFilterSearch');
+            const filterUserOptions = document.querySelectorAll('.filter-user-option');
+            const votingActivityList = document.getElementById('votingActivityList');
+            
+            // Toggle user filter dropdown
+            userFilterButton.addEventListener('click', function() {
+                const isExpanded = userFilterButton.getAttribute('aria-expanded') === 'true';
+                userFilterButton.setAttribute('aria-expanded', !isExpanded);
+                userFilterMenu.classList.toggle('hidden');
+                
+                if (!isExpanded) {
+                    userFilterSearch.focus();
+                }
+            });
+            
+            // Close user filter dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!userFilterDropdown.contains(event.target)) {
+                    userFilterButton.setAttribute('aria-expanded', 'false');
+                    userFilterMenu.classList.add('hidden');
+                }
+            });
+            
+            // Handle user filter selection
+            filterUserOptions.forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Update active state
+                    document.querySelector('.filter-user-option.active-filter').classList.remove('active-filter');
+                    this.classList.add('active-filter');
+                    
+                    // Get selected user ID
+                    const selectedUserId = this.getAttribute('data-user-id');
+                    
+                    // Update button text
+                    userFilterButton.innerHTML = `
+                        <span>${this.textContent.trim()}</span>
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    `;
+                    
+                    // Filter vote logs
+                    filterVoteLogs(selectedUserId);
+                    
+                    // Close dropdown
+                    userFilterButton.setAttribute('aria-expanded', 'false');
+                    userFilterMenu.classList.add('hidden');
+                });
+            });
+            
+            // Handle user filter search
+            userFilterSearch.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const options = document.querySelectorAll('#userFilterOptions .filter-user-option');
+                
+                options.forEach(option => {
+                    const text = option.textContent.toLowerCase();
+                    if (text.includes(searchTerm)) {
+                        option.style.display = 'block';
+                    } else {
+                        option.style.display = 'none';
+                    }
+                });
+            });
+            
+            // Function to filter vote logs by user
+            function filterVoteLogs(userId) {
+                const voteLogItems = document.querySelectorAll('.vote-log-item');
+                
+                voteLogItems.forEach(item => {
+                    const itemUserId = item.getAttribute('data-student-id');
+                    
+                    if (userId === '' || itemUserId === userId) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Initialize WebSocket connection
+            const socket = io();
+            
+            // Listen for real-time vote updates
+            socket.on('vote_cast', function(data) {
+                console.log('New vote received:', data);
+                // Update the recent voting activity section
+                updateVotingActivity(data);
+            });
+            
+            // Also listen for the newVoteLog event (backup)
+            socket.on('newVoteLog', function(voteLogs) {
+                if (Array.isArray(voteLogs) && voteLogs.length > 0) {
+                    voteLogs.forEach(log => {
+                        const voteData = {
+                            studentId: log.studentId ? log.studentId.studentId : "Unknown",
+                            candidateName: log.candidateId ? log.candidateId.name : "Deleted Candidate",
+                            createdAt: log.createdAt
+                        };
+                        console.log('New vote received (newVoteLog):', voteData);
+                        updateVotingActivity(voteData);
+                    });
+                }
+            });
+            
+            // Function to update the voting activity section with collapsible view
+            function updateVotingActivity(voteData) {
+                const votingActivityContainer = document.getElementById('votingActivityList');
+                if (votingActivityContainer) {
+                    // Get the first element to check if we need to replace it due to grouping
+                    const existingStudentElements = votingActivityContainer.querySelectorAll('.student-vote-header');
+                    let studentSection = null;
+                    
+                    // Find if this student already has a section
+                    for (let i = 0; i < existingStudentElements.length; i++) {
+                        if (existingStudentElements[i].getAttribute('data-student-id') === (voteData.studentId || 'unknown')) {
+                            studentSection = existingStudentElements[i].closest('.bg-gray-50.rounded-lg');
+                            break;
+                        }
+                    }
+                    
+                    if (studentSection) {
+                        // Update existing student section
+                        const detailsDiv = studentSection.querySelector('.student-vote-details');
+                        const voteCountElement = studentSection.querySelector('.text-xs.text-gray-500');
+                        
+                        // Update vote count
+                        const currentCount = parseInt(voteCountElement.textContent);
+                        voteCountElement.textContent = (currentCount + 1) + ' vote' + ((currentCount + 1) > 1 ? 's' : '');
+                        
+                        // Add new vote to the details
+                        const voteDetailHtml = `
+                            <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+                                <p class="text-sm text-gray-600">
+                                    Voted for ${voteData.candidateName || "Deleted Candidate"}
+                                </p>
+                                <span class="text-xs text-gray-400">${new Date().toLocaleTimeString()}</span>
+                            </div>
+                        `;
+                        
+                        detailsDiv.insertAdjacentHTML('afterbegin', voteDetailHtml);
+                    } else {
+                        // Create new student section
+                        const studentSectionHtml = `
+                            <div class="bg-gray-50 rounded-lg">
+                                <div class="p-3 border-b border-gray-200 cursor-pointer flex justify-between items-center student-vote-header" data-student-id="${voteData.studentId || 'unknown'}">
+                                    <div>
+                                        <p class="font-medium text-gray-800 flex items-center">
+                                            ${voteData.studentId || "Unknown"}
+                                            <svg class="w-4 h-4 ml-2 toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                            </svg>
+                                        </p>
+                                        <p class="text-xs text-gray-500">1 vote</p>
+                                    </div>
+                                    <span class="text-xs text-gray-500">${new Date().toLocaleTimeString()}</span>
+                                </div>
+                                <div class="student-vote-details px-3 pb-2">
+                                    <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+                                        <p class="text-sm text-gray-600">
+                                            Voted for ${voteData.candidateName || "Deleted Candidate"}
+                                        </p>
+                                        <span class="text-xs text-gray-400">${new Date().toLocaleTimeString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Add to the top of the list
+                        votingActivityContainer.insertAdjacentHTML('afterbegin', studentSectionHtml);
+                    }
+                    
+                    // Limit to 10 student sections total
+                    const allStudentSections = votingActivityContainer.querySelectorAll('.bg-gray-50.rounded-lg');
+                    if (allStudentSections.length > 10) {
+                        // Remove the last section
+                        votingActivityContainer.removeChild(allStudentSections[allStudentSections.length - 1]);
+                    }
+                }
+            }
+        });
+        
+        // Add event listeners for collapsible voting activity
+        document.addEventListener('click', function(event) {
+            if (event.target.closest('.student-vote-header')) {
+                const header = event.target.closest('.student-vote-header');
+                const details = header.nextElementSibling;
+                const icon = header.querySelector('.toggle-icon');
+                
+                if (details.classList.contains('hidden')) {
+                    details.classList.remove('hidden');
+                    icon.style.transform = 'rotate(180deg)';
+                } else {
+                    details.classList.add('hidden');
+                    icon.style.transform = 'rotate(0deg)';
+                }
+            }
+        });
+    </script>
+    
     <script src="/js/adminDashboard.js"></script>
 </body>
 
