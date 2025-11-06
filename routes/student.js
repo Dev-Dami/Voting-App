@@ -45,7 +45,8 @@ module.exports = (io) => {
   router.post("/login", async (req, res) => {
     const { studentId, password } = req.body;
     try {
-      const student = await Student.findOne({ studentId });
+      // Select only the fields we need to optimize query
+      const student = await Student.findOne({ studentId }).select('password role hasVoted _id');
       if (!student || !(await student.comparePassword(password))) {
         return res.render("login", {
           schoolLogo: process.env.SCHOOL_LOGO || "/images/logo.png",
@@ -59,7 +60,11 @@ module.exports = (io) => {
         process.env.JWT_SECRET,
         { expiresIn: "1h" },
       );
-      res.cookie("token", token);
+      res.cookie("token", token, { 
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 1 * 60 * 60 * 1000 // 1 hour
+      });
 
       if (student.hasVoted) {
         return res.redirect("/slip");
@@ -84,7 +89,7 @@ module.exports = (io) => {
         return res.render("electionNotRunning");
       }
 
-      const student = await Student.findById(req.user.id);
+      const student = await Student.findById(req.user.id).select('studentId hasVoted isSuspended votedPositions').lean();
       if (!student) {
         return res.status(404).send("Student not found");
       }
@@ -95,8 +100,8 @@ module.exports = (io) => {
       
       if (student.hasVoted) return res.redirect("/slip");
 
-      // fetch all candidates
-      const allCandidates = await Candidate.find();
+      // fetch all candidates with only necessary fields
+      const allCandidates = await Candidate.find().select('name position image').lean();
 
       // group candidates by position
       const groupedCandidates = {};
@@ -227,11 +232,9 @@ module.exports = (io) => {
   // Vote slip page
   router.get("/slip", verifyToken, async (req, res) => {
     try {
-      const student = await Student.findById(req.user.id);
+      // Find student and populate only necessary fields
+      const student = await Student.findById(req.user.id).select('votedPositions').populate("votedPositions.candidateId", "name").lean();
       if (!student) return res.status(404).send("Student not found");
-
-      // Populate candidates
-      await student.populate("votedPositions.candidateId", "name image");
 
       const votedCandidates = student.votedPositions
         .filter((v) => v.candidateId)
