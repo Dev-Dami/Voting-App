@@ -105,3 +105,61 @@ socket.on("newVoteLog", (newLogs) => {
     });
   }
 });
+
+// Change Password functionality
+document.addEventListener('DOMContentLoaded', function() {
+  // Add event listeners to all change password buttons
+  const changePasswordButtons = document.querySelectorAll('.change-password-btn');
+  const passwordModal = document.getElementById('passwordModal');
+  const passwordForm = document.getElementById('passwordForm');
+  const cancelModalBtn = document.getElementById('cancel-modal-btn');
+  const newPasswordInput = document.getElementById('newPassword');
+  const confirmPasswordInput = document.getElementById('confirmPassword');
+
+  changePasswordButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const studentId = this.getAttribute('data-student-id');
+      // Set the form action to include the student ID
+      passwordForm.action = `/admin/students/update-password/${studentId}`;
+      // Show the modal
+      passwordModal.classList.remove('hidden');
+    });
+  });
+
+  // Close modal when cancel button is clicked
+  if (cancelModalBtn) {
+    cancelModalBtn.addEventListener('click', function() {
+      passwordModal.classList.add('hidden');
+      // Reset form
+      passwordForm.reset();
+    });
+  }
+
+  // Close modal when clicking outside the modal content
+  passwordModal.addEventListener('click', function(e) {
+    if (e.target === passwordModal) {
+      passwordModal.classList.add('hidden');
+      // Reset form
+      passwordForm.reset();
+    }
+  });
+
+  // Validate passwords match before submitting
+  passwordForm.addEventListener('submit', function(e) {
+    const newPassword = newPasswordInput.value;
+    const confirmPassword = confirmPasswordInput.value;
+
+    if (newPassword !== confirmPassword) {
+      e.preventDefault();
+      alert('Passwords do not match!');
+      return false;
+    }
+    
+    // Simple password strength validation
+    if (newPassword.length < 6) {
+      e.preventDefault();
+      alert('Password must be at least 6 characters long!');
+      return false;
+    }
+  });
+});

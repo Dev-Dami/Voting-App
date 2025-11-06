@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
   filename: function (req, file, cb) {
     cb(
       null,
-      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
+      file.fieldname + "-" + Date.now() + path.extname(file.originalname),
     );
   },
 });
@@ -122,6 +122,41 @@ router.post("/students/delete/:id", verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+router.post(
+  "/students/update-password/:id",
+  verifyToken,
+  isAdmin,
+  async (req, res) => {
+    try {
+      const { password, confirmPassword } = req.body;
+      
+      // Validate passwords match
+      if (password !== confirmPassword) {
+        return res.status(400).json({ message: "Passwords do not match" });
+      }
+      
+      // Validate password length
+      if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters long" });
+      }
+      
+      const student = await Student.findById(req.params.id);
+      if (!student) {
+        return res.status(404).send("Student not found");
+      }
+      
+      student.password = password;
+      await student.save();
+      
+      // Redirect with success message (if needed)
+      res.redirect("/admin/dashboard");
+    } catch (err) {
+      console.error("Error updating password:", err);
+      res.status(500).json({ message: "Error updating password" });
+    }
+  },
+);
+
 // manage candidates
 router.post(
   "/candidates/add",
@@ -148,7 +183,7 @@ router.post(
       console.error("Error adding candidate:", err);
       res.status(500).json({ message: "Error adding candidate" });
     }
-  }
+  },
 );
 
 router.post(
@@ -176,7 +211,7 @@ router.post(
       console.error("Error deleting candidate:", err);
       res.status(500).send("error deleting candidate");
     }
-  }
+  },
 );
 
 // Election routes
@@ -195,7 +230,7 @@ router.post("/election/start", verifyToken, isAdmin, async (req, res) => {
     }
     await Election.updateOne(
       {},
-      { status: "running", startTime: now, endTime: electionEndTime }
+      { status: "running", startTime: now, endTime: electionEndTime },
     );
     res.redirect("/admin/dashboard");
   } catch (err) {
@@ -221,7 +256,7 @@ router.post("/election/reset", verifyToken, isAdmin, async (req, res) => {
     await VoteLog.deleteMany({});
     await Election.updateOne(
       {},
-      { status: "pending", startTime: null, endTime: null }
+      { status: "pending", startTime: null, endTime: null },
     );
     res.redirect("/admin/dashboard");
   } catch (err) {
@@ -238,7 +273,7 @@ router.get("/candidate/:id/votes", verifyToken, isAdmin, async (req, res) => {
 
     const votes = await VoteLog.find({ candidateId: req.params.id }).populate(
       "studentId",
-      "studentId"
+      "studentId",
     );
 
     res.render("candidateVotes", { candidate, votes });
@@ -292,7 +327,7 @@ router.get(
       console.error("Error getting chart data:", err);
       res.status(500).json({ message: "Error getting chart data" });
     }
-  }
+  },
 );
 
 // Test charts page

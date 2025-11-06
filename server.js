@@ -29,11 +29,11 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         scriptSrc: [
           "'self'",
-          "'unsafe-inline'",
           "https://cdnjs.cloudflare.com",
+          "'sha256-mWhaVcY/qM4ntQl6lLTc9ovjFrRgTcPLx5a+IpU+/aE='",
         ],
         imgSrc: ["'self'", "data:", "blob:"],
         connectSrc: ["'self'", "https://cdnjs.cloudflare.com"],
