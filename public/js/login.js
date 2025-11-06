@@ -1,31 +1,26 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const issueModal = document.getElementById('issueModal');
-    const issueForm = document.getElementById('issueForm');
-    const cancelIssueModalBtn = document.getElementById('cancel-issue-modal-btn');
+    const issueFormContainer = document.getElementById('issueFormContainer');
     const forgotPasswordLink = document.getElementById('forgot-password-link');
+    const cancelIssueBtn = document.getElementById('cancel-issue-btn');
 
-    // Open modal when forgot password link is clicked
+    // Show issue form when link is clicked
     if (forgotPasswordLink) {
         forgotPasswordLink.addEventListener('click', function(e) {
             e.preventDefault();
-            issueModal.classList.remove('hidden');
+            issueFormContainer.classList.remove('hidden');
         });
     }
 
-    // Close modal when cancel button is clicked
-    if (cancelIssueModalBtn) {
-        cancelIssueModalBtn.addEventListener('click', function(e) {
+    // Hide issue form when cancel button is clicked
+    if (cancelIssueBtn) {
+        cancelIssueBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            issueModal.classList.add('hidden');
-            issueForm.reset();
+            issueFormContainer.classList.add('hidden');
+            // Reset form fields
+            const form = issueFormContainer.querySelector('form');
+            if (form) {
+                form.reset();
+            }
         });
     }
-
-    // Close modal when clicking on the backdrop
-    window.addEventListener('click', function(event) {
-        if (event.target === issueModal) {
-            issueModal.classList.add('hidden');
-            issueForm.reset();
-        }
-    });
 });
