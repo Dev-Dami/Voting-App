@@ -42,7 +42,7 @@ app.use(
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
-        frameSrc: ["'none'"],
+        frameSrc: ["'self'", "data:"],
       },
     },
   }),
@@ -93,7 +93,7 @@ app.get("/", (req, res) => {
 app.use("/admin", adminRoutes);
 app.use("/", studentRoutes);
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running locally: http://localhost:${PORT}`);

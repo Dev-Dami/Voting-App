@@ -9,6 +9,7 @@ const VoteLog = require("../models/voteLogs");
 const Election = require("../models/Election");
 const Issue = require("../models/Issue");
 const { verifyToken } = require("../middleware/auth");
+const { exportElectionResultsPDF, generatePDFData } = require("../middleware/Dataexports");
 
 const router = express.Router();
 
@@ -456,6 +457,34 @@ router.get("/export-data", verifyToken, isAdmin, async (req, res) => {
   } catch (err) {
     console.error("Error exporting data:", err);
     res.status(500).json({ message: "Error exporting data" });
+  }
+});
+
+// Export data as PDF
+router.get("/export-pdf", verifyToken, isAdmin, async (req, res) => {
+  try {
+    await exportElectionResultsPDF(req, res);
+  } catch (err) {
+    console.error("Error exporting PDF:", err);
+    res.status(500).json({ message: "Error exporting PDF" });
+  }
+});
+
+// View PDF preview
+router.get("/view-pdf", verifyToken, isAdmin, async (req, res) => {
+  try {
+    const pdfData = await generatePDFData();
+    res.render("pdfPreview", { pdfData });
+  } catch (err) {
+    console.error("Error generating PDF preview:", err);
+    res.status(500).render("adminDashboard", { 
+      message: "Error generating PDF preview",
+      students: [],
+      candidates: [],
+      voteLogs: [],
+      election: { status: "error" },
+      positions: []
+    });
   }
 });
 
