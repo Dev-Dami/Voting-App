@@ -47,20 +47,31 @@
         }
         .candidate-card {
             border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 15px;
+            border-radius: 12px;
+            padding: 25px;
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 25px;
+            min-height: 100px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
         .candidate-image {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            border-radius: 8px; /* Rounded squares */
             object-fit: cover;
+            border: 2px solid #e5e7eb;
         }
         .candidate-info {
             flex: 1;
+        }
+        .candidate-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .candidate-stats {
+            font-size: 1em;
         }
         .position-header {
             background-color: #f3f4f6;
@@ -84,19 +95,50 @@
             text-decoration: none;
             display: inline-block;
         }
-        .btn-download {
-            background-color: #1d4ed8;
-            color: white;
-        }
-        .btn-download:hover {
-            background-color: #1e40af;
-        }
         .btn-back {
             background-color: #6b7280;
             color: white;
         }
         .btn-back:hover {
             background-color: #4b5563;
+        }
+        
+        /* Print styles */
+        @media print {
+            body {
+                background-color: white;
+                padding: 0;
+                margin: 0;
+            }
+            .pdf-container {
+                box-shadow: none;
+                margin: 0;
+                max-width: 100%;
+            }
+            .controls {
+                display: none;
+            }
+            .candidate-grid {
+                grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            }
+            .candidate-card {
+                border: 1px solid #d1d5db;
+                page-break-inside: avoid;
+                margin-bottom: 15px;
+            }
+            .header {
+                padding: 15px;
+            }
+            .preview-content {
+                padding: 20px;
+            }
+            .summary-card {
+                page-break-inside: avoid;
+            }
+            .position-header {
+                page-break-before: always;
+                break-before: always;
+            }
         }
     </style>
 </head>
@@ -116,9 +158,6 @@
                 </div>
                 
                 <div class="action-buttons mt-3 md:mt-0">
-                    <a href="/admin/export-pdf" class="btn btn-download">
-                        Download PDF
-                    </a>
                     <a href="/admin/dashboard" class="btn btn-back">
                         Back to Dashboard
                     </a>
@@ -197,12 +236,12 @@
                         <% if (candidate.image) { %>
                             <img src="<%= candidate.image %>" alt="<%= candidate.name %>" class="candidate-image" onerror="this.onerror=null; this.src='/images/default-candidate.jpg';">
                         <% } else { %>
-                            <div class="candidate-image bg-gray-200 border-2 border-dashed rounded-full w-12 h-12 flex items-center justify-center">No Image</div>
+                            <div class="candidate-image bg-gray-200 border-2 border-dashed flex items-center justify-center text-xs">No Image</div>
                         <% } %>
                         <div class="candidate-info">
-                            <div class="font-semibold"><%= candidate.name %></div>
-                            <div class="text-sm text-gray-600">Votes: <%= candidate.votes %></div>
-                            <div class="text-sm text-gray-600">Percentage: <%= candidate.percentage %>%</div>
+                            <div class="candidate-name"><%= candidate.name %></div>
+                            <div class="candidate-stats text-sm text-gray-600">Votes: <%= candidate.votes %></div>
+                            <div class="candidate-stats text-sm text-gray-600">Percentage: <%= candidate.percentage %>%</div>
                         </div>
                     </div>
                 <% }); %>
@@ -210,5 +249,49 @@
             <% }); %>
         </div>
     </div>
+    
+    <script>
+        // Client-side script to enhance UI and print functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Make sure content is properly formatted for print
+            window.addEventListener('beforeprint', function() {
+                document.body.style.backgroundColor = 'white';
+                
+                // Hide the controls section (with back button) when printing
+                const controls = document.querySelector('.controls');
+                if (controls) {
+                    controls.style.display = 'none';
+                }
+                
+                // Hide buttons when printing
+                const actionButtons = document.querySelector('.action-buttons');
+                if (actionButtons) {
+                    actionButtons.style.display = 'none';
+                }
+            });
+            
+            window.addEventListener('afterprint', function() {
+                document.body.style.backgroundColor = '#f3f4f6';
+                
+                // Show the controls section after printing
+                const controls = document.querySelector('.controls');
+                if (controls) {
+                    controls.style.display = 'block';
+                }
+                
+                // Show buttons after printing
+                const actionButtons = document.querySelector('.action-buttons');
+                if (actionButtons) {
+                    actionButtons.style.display = 'flex';
+                }
+            });
+        });
+        
+        // Function to handle data if loaded from client-side API
+        function updatePreview(data) {
+            // This function would update the preview if data is loaded client-side
+            // Currently the EJS template handles server-side rendering
+        }
+    </script>
 </body>
 </html>
