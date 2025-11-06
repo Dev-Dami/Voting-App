@@ -10,81 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="/css/style.min.css" rel="stylesheet" />
     <link href="/css/vote.css" rel="stylesheet" />
-
-    <style>
-        /* --- Responsive auto grid layout --- */
-        .positions-container {
-            display: flex;
-            flex-direction: column;
-            gap: 3rem;
-        }
-
-        /* Each position section */
-        .position-card {
-            padding: 1.5rem;
-            border-radius: 1rem;
-            background-color: #fff;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        /* Grid for candidates */
-        .position-card .space-y-3 {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1.5rem;
-            justify-content: center;
-            align-items: start;
-        }
-
-        /* Candidate card visual style */
-        .position-card label {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            border: 2px solid #e5e7eb;
-            padding: 1.5rem;
-            border-radius: 1rem;
-            background: #fff;
-            transition: all 0.2s ease;
-        }
-
-        .position-card label:hover {
-            border-color: #dc2626;
-            background-color: #fef2f2;
-            transform: scale(1.03);
-        }
-
-        /* Radio input hidden but clickable area preserved */
-        .position-card input[type="radio"] {
-            position: absolute;
-            opacity: 0;
-        }
-
-        /* Candidate image */
-        .position-card img {
-            width: 140px;
-            height: 140px;
-            object-fit: cover;
-            border-radius: 50%;
-            border: 3px solid #f3f4f6;
-            margin-bottom: 1rem;
-        }
-
-        /* Candidate name */
-        .position-card span {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #374151;
-        }
-
-        /* Selected effect */
-        .position-card input[type="radio"]:checked + img {
-            border-color: #dc2626;
-            box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.3);
-        }
-    </style>
 </head>
 
 <body class="bg-gray-50 font-sans flex flex-col min-h-screen">
@@ -103,7 +28,7 @@
             <div class="positions-container no-scrollbar">
                 <% Object.keys(groupedCandidates).forEach(position => { %>
                     <div class="position-card border border-gray-200">
-                        <h2 class="text-lg md:text-xl font-bold mb-5 text-red-700 border-b border-gray-200 pb-2">
+                        <h2 class="text-lg md:text-xl font-bold mb-5 text-red-700 border-b border-gray-200 pb-2 text-center">
                             <%= position %>
                         </h2>
                         <div class="space-y-3">
@@ -127,10 +52,8 @@
         </form>
     </div>
 
-    <!-- Overlay -->
     <div id="overlay" class="overlay"></div>
 
-    <!-- Slide-out Confirmation Panel -->
     <div id="slideOutPanel" class="slide-out-panel">
         <div class="p-6">
             <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
