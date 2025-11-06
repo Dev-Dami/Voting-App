@@ -99,7 +99,7 @@ module.exports = (io) => {
         groupedCandidates[candidate.position].push(candidate);
       });
 
-      res.render("vote", { groupedCandidates });
+      res.render("vote", { groupedCandidates, user: student });
     } catch (err) {
       console.error("Error loading vote page:", err);
       res.status(500).json({ message: "Error loading vote page" });
