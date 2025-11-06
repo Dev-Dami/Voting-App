@@ -22,15 +22,53 @@
             background: linear-gradient(135deg, #b91c1c, #dc2626);
             color: white;
             padding: 20px;
+            text-align: center;
         }
         .controls {
             background-color: #f8fafc;
             padding: 15px;
             border-bottom: 1px solid #e5e7eb;
         }
-        .pdf-viewer {
-            height: 70vh;
-            width: 100%;
+        .preview-content {
+            padding: 30px;
+        }
+        .summary-card {
+            background-color: #f9fafb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .candidate-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .candidate-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .candidate-image {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .candidate-info {
+            flex: 1;
+        }
+        .position-header {
+            background-color: #f3f4f6;
+            padding: 10px 15px;
+            margin: 20px 0 10px 0;
+            border-left: 4px solid #dc2626;
+            font-weight: bold;
+            font-size: 1.1em;
         }
         .action-buttons {
             display: flex;
@@ -43,6 +81,8 @@
             font-weight: 600;
             cursor: pointer;
             border: none;
+            text-decoration: none;
+            display: inline-block;
         }
         .btn-download {
             background-color: #1d4ed8;
@@ -63,8 +103,9 @@
 <body class="bg-gray-100">
     <div class="pdf-container">
         <div class="header">
-            <h1 class="text-2xl font-bold">Election Results PDF Preview</h1>
-            <p class="text-red-100">Preview and download your election results report</p>
+            <h1 class="text-2xl font-bold">Yeshua High School</h1>
+            <h2 class="text-xl mt-2"><%= electionData.electionName %></h2>
+            <p class="text-red-100 mt-1">Date: <%= electionData.startTime %> - <%= electionData.endTime %></p>
         </div>
         
         <div class="controls">
@@ -85,22 +126,89 @@
             </div>
         </div>
         
-        <div class="pdf-viewer">
-            <iframe 
-                src="<%= pdfData %>" 
-                width="100%" 
-                height="100%"
-                style="border: none;"
-                title="Election Results PDF Preview"
-            ></iframe>
+        <div class="preview-content">
+            <div class="summary-card">
+                <h3 class="text-lg font-bold mb-3">ELECTION SUMMARY</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-600">Total Voters</p>
+                        <p class="text-xl font-bold"><%= electionData.totalVoters %></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Voted</p>
+                        <p class="text-xl font-bold"><%= electionData.totalVotes %></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Turnout</p>
+                        <p class="text-xl font-bold"><%= electionData.turnoutPercentage %>%</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Positions</p>
+                        <p class="text-xl font-bold"><%= Object.keys(electionData.positionWinners || {}).length %></p>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h4 class="font-semibold mb-2">Position Winners:</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <%
+                      const positions = Object.keys(electionData.positionWinners || {});
+                      if (positions.length === 0) {
+                    %>
+                        <p class="text-gray-500">No candidates registered yet</p>
+                    <%
+                      } else {
+                        positions.forEach(position => {
+                          const winner = electionData.positionWinners[position];
+                    %>
+                        <div class="flex justify-between border-b pb-1">
+                            <span class="font-medium"><%= position %>:</span>
+                            <span><%= winner.name %></span>
+                        </div>
+                    <% 
+                        });
+                      }
+                    %>
+                    </div>
+                </div>
+            </div>
+            
+            <h3 class="text-xl font-bold mb-4 mt-6">CANDIDATE RESULTS</h3>
+            
+            <%
+              // Group candidates by position
+              const candidatesByPosition = {};
+              electionData.candidates.forEach(candidate => {
+                if (!candidatesByPosition[candidate.position]) {
+                  candidatesByPosition[candidate.position] = [];
+                }
+                candidatesByPosition[candidate.position].push(candidate);
+              });
+            %>
+            
+            <% Object.keys(candidatesByPosition).forEach(position => { %>
+                <div class="position-header">
+                    <%= position.toUpperCase() %>
+                </div>
+                
+                <div class="candidate-grid">
+                <% candidatesByPosition[position].forEach(candidate => { %>
+                    <div class="candidate-card">
+                        <% if (candidate.image) { %>
+                            <img src="<%= candidate.image %>" alt="<%= candidate.name %>" class="candidate-image" onerror="this.onerror=null; this.src='/images/default-candidate.jpg';">
+                        <% } else { %>
+                            <div class="candidate-image bg-gray-200 border-2 border-dashed rounded-full w-12 h-12 flex items-center justify-center">No Image</div>
+                        <% } %>
+                        <div class="candidate-info">
+                            <div class="font-semibold"><%= candidate.name %></div>
+                            <div class="text-sm text-gray-600">Votes: <%= candidate.votes %></div>
+                            <div class="text-sm text-gray-600">Percentage: <%= candidate.percentage %>%</div>
+                        </div>
+                    </div>
+                <% }); %>
+                </div>
+            <% }); %>
         </div>
     </div>
-
-    <script>
-        // Optional: Add functionality to refresh the PDF preview if needed
-        document.addEventListener('DOMContentLoaded', function() {
-            // You can add additional JavaScript here if needed
-        });
-    </script>
 </body>
 </html>
