@@ -30,13 +30,8 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        scriptSrc: [
-          "'self'",
-          "https://cdnjs.cloudflare.com",
-          "'sha256-mWhaVcY/qM4ntQl6lLTc9ovjFrRgTcPLx5a+IpU+/aE='",
-          "'sha256-V1qNcmiveH8c9lH5ZGbl9z9eJoli+IBRRF0UZoAZRP4='",
-        ],
+        styleSrc: ["'self'", "https://fonts.googleapis.com"],
+        scriptSrc: ["'self'", "https://cdnjs.cloudflare.com"],
         imgSrc: ["'self'", "data:", "blob:"],
         connectSrc: ["'self'", "https://cdnjs.cloudflare.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
