@@ -16,9 +16,16 @@
     <header class="bg-gradient-to-r from-red-700 to-red-900 text-white py-8 shadow-md">
         <div class="container mx-auto max-w-7xl px-10 flex justify-between items-center">
             <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">Cast Your Vote</h1>
-            <a href="/login" class="bg-white text-red-700 px-5 py-2 rounded-full shadow-md hover:bg-gray-100 transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50">
-                Logout
-            </a>
+            <div class="flex flex-col items-end">
+                <% if (typeof user !== 'undefined' && user) { %>
+                    <p class="text-red-200 text-sm md:text-base mb-1">Voting as: <%= user.studentId %></p>
+                <% } else { %>
+                    <p class="text-red-200 text-sm md:text-base mb-1">Voting as: Student</p>
+                <% } %>
+                <a href="/login" class="bg-white text-red-700 px-5 py-2 rounded-full shadow-md hover:bg-gray-100 transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50">
+                    Logout
+                </a>
+            </div>
         </div>
         <p class="text-center mt-2 text-red-200 text-sm md:text-base">Select one candidate for each position</p>
     </header>
@@ -96,5 +103,12 @@
     </footer>
 
     <script src="/js/vote.js"></script>
+    <script>
+        // Update user display with server-provided data if available
+        document.addEventListener('DOMContentLoaded', function() {
+            // If user data was passed from the server, update the display
+            // This is handled by EJS directly in the HTML now
+        });
+    </script>
 </body>
 </html>
