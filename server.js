@@ -35,6 +35,7 @@ app.use(
           "'self'",
           "https://cdnjs.cloudflare.com",
           "'sha256-mWhaVcY/qM4ntQl6lLTc9ovjFrRgTcPLx5a+IpU+/aE='",
+          "'sha256-V1qNcmiveH8c9lH5ZGbl9z9eJoli+IBRRF0UZoAZRP4='",
         ],
         imgSrc: ["'self'", "data:", "blob:"],
         connectSrc: ["'self'", "https://cdnjs.cloudflare.com"],
