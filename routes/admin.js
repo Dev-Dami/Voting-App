@@ -7,6 +7,7 @@ const Student = require("../models/Student");
 const Candidate = require("../models/Candidate");
 const VoteLog = require("../models/voteLogs");
 const Election = require("../models/Election");
+const Issue = require("../models/Issue");
 const { verifyToken } = require("../middleware/auth");
 
 const router = express.Router();
@@ -329,6 +330,40 @@ router.get(
     }
   },
 );
+
+// admin voters page - view all students and issues
+router.get("/voters", verifyToken, isAdmin, async (req, res) => {
+  try {
+    const students = await Student.find().sort({ studentId: 1 });
+    const issues = await Issue.find().sort({ createdAt: -1 });
+    
+    res.render("adminVoters", {
+      students,
+      issues
+    });
+  } catch (err) {
+    console.error("Error loading voters page:", err);
+    res.status(500).json({ message: "Error loading voters page" });
+  }
+});
+
+// Update issue status
+router.post("/issues/:id/status", verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const validStatuses = ['pending', 'in-progress', 'resolved'];
+    
+    if (!validStatuses.includes(status)) {
+      return res.status(400).send("Invalid status");
+    }
+    
+    await Issue.findByIdAndUpdate(req.params.id, { status });
+    res.redirect("/admin/voters");
+  } catch (err) {
+    console.error("Error updating issue status:", err);
+    res.status(500).json({ message: "Error updating issue status" });
+  }
+});
 
 // Test charts page
 router.get("/test-charts", verifyToken, isAdmin, async (req, res) => {
