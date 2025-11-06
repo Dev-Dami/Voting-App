@@ -57,7 +57,7 @@ module.exports = (io) => {
       const token = jwt.sign(
         { id: student._id, role: student.role },
         process.env.JWT_SECRET,
-        { expiresIn: "1h" }
+        { expiresIn: "1h" },
       );
       res.cookie("token", token);
 
@@ -108,43 +108,59 @@ module.exports = (io) => {
 
   // handle vote
   router.post("/vote", verifyToken, isStudent, async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
     try {
-      const election = await Election.findOne();
+      const election = await Election.findOne().session(session);
       if (!election || election.status !== "running") {
+        await session.abortTransaction();
+        session.endSession();
         return res.render("electionNotRunning");
       }
 
-      const student = await Student.findById(req.user.id);
-      if (!student) return res.status(404).send("Student not found");
+      const student = await Student.findById(req.user.id).session(session);
+      if (!student) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(404).send("Student not found");
+      }
 
-      if (student.hasVoted) return res.redirect("/slip");
+      if (student.hasVoted) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.redirect("/slip");
+      }
 
-      const allCandidates = await Candidate.find();
+      const allCandidates = await Candidate.find().session(session);
       const positions = [...new Set(allCandidates.map((c) => c.position))];
 
       const selectedCandidates = {};
       for (const pos of positions) {
         const key = pos.replace(/\s+/g, "_").toLowerCase();
         if (!req.body[key]) {
+          await session.abortTransaction();
+          session.endSession();
           return res.status(400).send(`Please select a candidate for ${pos}`);
         }
         selectedCandidates[pos] = req.body[key];
       }
 
       const candidateIds = Object.values(selectedCandidates);
-      const candidates = await Candidate.find({ _id: { $in: candidateIds } });
+      const candidates = await Candidate.find({
+        _id: { $in: candidateIds },
+      }).session(session);
       if (candidates.length !== candidateIds.length) {
         throw new Error("Invalid candidate selected");
       }
 
-      const candidateUpdates = [];
       const voteLogs = [];
       const newVotedPositions = [];
 
       for (const [pos, candId] of Object.entries(selectedCandidates)) {
-        candidateUpdates.push(
-          Candidate.updateOne({ _id: candId }, { $inc: { votes: 1 } })
-        );
+        await Candidate.updateOne(
+          { _id: candId },
+          { $inc: { votes: 1 } },
+        ).session(session);
         voteLogs.push({
           studentId: student._id,
           candidateId: candId,
@@ -156,29 +172,26 @@ module.exports = (io) => {
         });
       }
 
-      await Promise.all(candidateUpdates);
-      const insertedVoteLogs = await VoteLog.insertMany(voteLogs);
-
-      // Populate studentId and candidateId for the emitted logs
-      const populatedVoteLogs = await VoteLog.find({
-        _id: { $in: insertedVoteLogs.map((log) => log._id) },
-      })
-        .populate("studentId", "studentId") // Only fetch studentId field from Student model
-        .populate("candidateId", "name"); // Only fetch name field from Candidate model
-
-      // Emit Socket.IO event for new vote logs
-      io.emit("newVoteLog", populatedVoteLogs);
+      const insertedVoteLogs = await VoteLog.insertMany(voteLogs, { session });
 
       student.votedPositions.push(...newVotedPositions);
-
       if (student.votedPositions.length >= positions.length) {
         student.hasVoted = true;
       }
+      await student.save({ session });
 
-      await student.save();
+      await session.commitTransaction();
+      session.endSession();
 
-      // socket.IO event {updated candidate}
-      for (const [pos, candId] of Object.entries(selectedCandidates)) {
+      // Emit Socket.IO events after the transaction is successful
+      const populatedVoteLogs = await VoteLog.find({
+        _id: { $in: insertedVoteLogs.map((log) => log._id) },
+      })
+        .populate("studentId", "studentId")
+        .populate("candidateId", "name");
+      io.emit("newVoteLog", populatedVoteLogs);
+
+      for (const candId of candidateIds) {
         const updatedCandidate = await Candidate.findById(candId);
         if (updatedCandidate) {
           io.emit("voteUpdate", {
@@ -190,6 +203,8 @@ module.exports = (io) => {
 
       res.redirect("/slip");
     } catch (err) {
+      await session.abortTransaction();
+      session.endSession();
       console.error("Vote submission error:", err);
       res.status(500).send("Error submitting vote");
     }
@@ -205,7 +220,7 @@ module.exports = (io) => {
       await student.populate("votedPositions.candidateId", "name image");
 
       const votedCandidates = student.votedPositions
-        .filter((v) => v.candidateId) 
+        .filter((v) => v.candidateId)
         .map((v) => ({
           position: v.position,
           name: v.candidateId.name,
@@ -222,24 +237,25 @@ module.exports = (io) => {
   router.post("/submit-issue", async (req, res) => {
     try {
       const { name, className, problem } = req.body;
-      
+
       if (!name || !className || !problem) {
         return res.status(400).send("All fields are required");
       }
-      
+
       const issue = new Issue({
         name,
         className,
-        problem
+        problem,
       });
-      
+
       await issue.save();
-      
+
       // Redirect back to login page with success message
       res.render("login", {
         schoolLogo: process.env.SCHOOL_LOGO || "/images/logo.png",
         schoolName: process.env.SCHOOL_NAME || "Yeshua High School",
-        errorMessage: "Issue submitted successfully. Admin will review it shortly.",
+        errorMessage:
+          "Issue submitted successfully. Admin will review it shortly.",
       });
     } catch (err) {
       console.error("Error submitting issue:", err);
