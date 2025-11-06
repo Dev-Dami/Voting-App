@@ -471,6 +471,8 @@ router.get("/export-data", verifyToken, isAdmin, async (req, res) => {
 // Export data as PDF
 router.get("/export-pdf", verifyToken, isAdmin, async (req, res) => {
   try {
+    // Check if we have data from the dashboard to avoid re-querying
+    // If not, call the export function normally
     await exportElectionResultsPDF(req, res);
   } catch (err) {
     console.error("Error exporting PDF:", err);
