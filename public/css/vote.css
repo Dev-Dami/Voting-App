@@ -1,11 +1,112 @@
-/* Hide scrollbar but keep functionality */
-.no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+/* --- Responsive auto grid layout --- */
+.positions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
 }
 
-.no-scrollbar::-webkit-scrollbar {
-    display: none;
+/* Each position section */
+.position-card {
+    padding: 1.5rem;
+    border-radius: 1rem;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Grid for candidates */
+.position-card .space-y-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 2rem;
+    justify-items: center; /* Center cards when fewer per row */
+    align-items: start;
+}
+
+/* Candidate card visual style */
+.position-card label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    border: 2px solid #e5e7eb;
+    padding: 2rem 1.5rem;
+    border-radius: 1rem;
+    background: #fff;
+    transition: all 0.25s ease;
+    max-width: 280px;
+    width: 100%;
+    cursor: pointer;
+}
+
+.position-card label:hover {
+    border-color: #dc2626;
+    background-color: #fef2f2;
+    transform: scale(1.04);
+}
+
+/* Hide native radio */
+.position-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Candidate image */
+.position-card img {
+    width: 180px;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 1rem;
+    border: 3px solid #f3f4f6;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+/* Candidate name */
+.position-card span {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #374151;
+    margin-top: 0.25rem;
+}
+
+/* --- Strong Selected Effect --- */
+.position-card input[type="radio"]:checked + img {
+    border-color: #b91c1c; /* deep red */
+    box-shadow: 0 0 25px 6px rgba(220, 38, 38, 0.55);
+    transform: scale(1.08);
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+/* Optional: Highlight entire card when selected */
+.position-card input[type="radio"]:checked ~ span,
+.position-card input[type="radio"]:checked ~ img {
+    filter: brightness(1.05);
+}
+
+.position-card input[type="radio"]:checked ~ span {
+    color: #b91c1c;
+    font-weight: 700;
+}
+
+/* Responsive tweak for small screens */
+@media (max-width: 640px) {
+    .position-card .space-y-3 {
+        grid-template-columns: 1fr;
+    }
+
+    .position-card label {
+        max-width: 100%;
+        padding: 1.5rem;
+    }
+
+    .position-card img {
+        width: 100%;
+        max-width: 260px;
+        height: auto;
+    }
 }
 
 /* Slide-out confirmation panel */
@@ -43,27 +144,6 @@
 .overlay.active {
     opacity: 1;
     visibility: visible;
-}
-
-/* Expanded responsive grid for positions */
-.positions-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 2.5rem;
-    padding: 2rem;
-}
-
-.position-card {
-    background: white;
-    border-radius: 1rem;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
-    padding: 2rem;
-    transition: all 0.25s ease-in-out;
-}
-
-.position-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.1);
 }
 
 /* Notification div */
