@@ -1,6 +1,6 @@
 # Contributing to Voting-App
 
-Thanks for your interest in contributing! The goal of this document is to make it easy for you to contribute in a way that keeps the project stable and easy to review.
+Thanks for your interest in contributing! This repository is maintained for Yeshua School — the goal of this document is to make it easy for you to contribute in a way that keeps the project stable and easy to review.
 
 ## How to contribute
 
@@ -36,6 +36,8 @@ npm install
 ```powershell
 npm run dev
 ```
+ 
+If you are part of Yeshua School IT and need admin access, deploy keys, or urgent support, contact the maintainer listed in `readme.md` and include your role and requested access level.
 
 ## Review checklist (what maintainers look for)
 

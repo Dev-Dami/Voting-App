@@ -1,13 +1,12 @@
- # Voting App
+ # Yeshua School — Voting App
 
-A concise, secure voting application with separate admin and student interfaces. Built with Node.js, Express, MongoDB (Mongoose) and EJS templates. Suitable for small-to-medium school elections and similar use cases.
+An in-house voting system maintained for Yeshua School. This concise, secure application provides separate admin and student interfaces and is built with Node.js, Express, MongoDB (Mongoose) and EJS templates. It is intended for school elections and similar small-to-medium use cases.
 
 ## Highlights
 - Secure student authentication and voting
 - Admin dashboard for election, candidate and voter management
 - Real-time vote updates (Socket.IO)
 - Issue reporting and basic issue tracking
-
 ## Quick Start
 
 Requirements:
@@ -83,7 +82,14 @@ Note: Some routes render EJS views while others perform actions. Protected route
 - JWT/auth issues: confirm `JWT_SECRET` is set.
 - Port in use: change `PORT` or stop the conflicting service.
 
-## Next steps
-- If you want, I can add `CONTRIBUTING.md` and `LICENSE` files (MIT), and keep the README concise — I added those files now.
+## Maintainers & support
 
-For more detailed architecture, tests, or deployment scripts, tell me what you'd like next.
+This repository is maintained for Yeshua School. If you are a maintainer or school IT staff, please update the contact details below.
+
+- Maintainer: Dev-Dami (repo owner)
+- School: Yeshua School
+- Contact: yeshua
+
+## Next steps
+
+For more detailed architecture, tests, or deployment scripts, tell me what you'd like next. I can also add a `.env.example`, CI checks, or a formal `CODE_OF_CONDUCT.md` on request.
