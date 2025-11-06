@@ -24,14 +24,19 @@ const lanIP = Object.values(networkInterfaces)
   .find((iface) => iface.family === "IPv4" && !iface.internal)?.address;
 
 //middleware
+
 app.use(
   helmet({
     hsts: true,
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "https://fonts.googleapis.com"],
-        scriptSrc: ["'self'", "https://cdnjs.cloudflare.com"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://cdnjs.cloudflare.com",
+        ],
         imgSrc: ["'self'", "data:", "blob:"],
         connectSrc: ["'self'", "https://cdnjs.cloudflare.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
