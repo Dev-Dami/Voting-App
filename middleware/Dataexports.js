@@ -11,15 +11,17 @@ const Election = require("../models/Election");
  */
 const exportElectionResultsPDF = async (req, res) => {
   try {
-    // Get all necessary data
-    const students = await Student.find();
-    const candidates = await Candidate.find().sort({ votes: -1 });
-    const voteLogs = await VoteLog.find();
-    const election = await Election.findOne();
+    // Load data in parallel with optimized queries
+    const [students, candidates, voteLogs, election] = await Promise.all([
+      Student.countDocuments(), // Only get count instead of all documents
+      Candidate.find().sort({ votes: -1 }).select('name image votes position').lean(),
+      VoteLog.countDocuments(), // Only get count instead of all documents
+      Election.findOne()
+    ]);
 
     // Calculate summary data - handle case where there are no votes
-    const totalVoters = students.length;
-    const totalVotes = voteLogs.length;
+    const totalVoters = students; // Now it's the count
+    const totalVotes = voteLogs; // Now it's the count
     const turnoutPercentage = totalVoters > 0 
       ? Math.round((totalVotes / totalVoters) * 100 * 100) / 100 
       : 0;
@@ -36,7 +38,6 @@ const exportElectionResultsPDF = async (req, res) => {
       totalVoters,
       totalVotes,
       turnoutPercentage,
-      winner: winner ? winner.name : "No winner",
       candidates: candidates.map(candidate => {
         // Calculate percentage for each candidate - handle case where there are no votes
         const percentage = totalVotes > 0 
@@ -52,6 +53,35 @@ const exportElectionResultsPDF = async (req, res) => {
         };
       })
     };
+
+    // Find winners for each position
+    const candidatesByPosition = {};
+    candidates.forEach(candidate => {
+      if (!candidatesByPosition[candidate.position]) {
+        candidatesByPosition[candidate.position] = [];
+      }
+      candidatesByPosition[candidate.position].push(candidate);
+    });
+
+    // Determine winner for each position (candidate with most votes in that position)
+    const positionWinners = {};
+    for (const position in candidatesByPosition) {
+      const positionCandidates = candidatesByPosition[position];
+      // Sort by votes descending and take the first one
+      positionCandidates.sort((a, b) => b.votes - a.votes);
+      if (positionCandidates.length > 0 && positionCandidates[0].votes > 0) {
+        positionWinners[position] = positionCandidates[0]; // The one with most votes
+      } else {
+        // Set placeholder for positions with no votes yet
+        positionWinners[position] = {
+          name: "No votes yet",
+          votes: 0,
+          percentage: 0
+        };
+      }
+    }
+
+    exportData.positionWinners = positionWinners;
 
     // Create PDF
     const doc = new jsPDF('p', 'mm', 'a4');
@@ -92,24 +122,42 @@ const exportElectionResultsPDF = async (req, res) => {
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
     doc.text(`Total Voters: ${exportData.totalVoters}`, 20, 70);
-    doc.text(`Total Votes Cast: ${exportData.totalVotes}`, 20, 80);
+    doc.text(`Total Voted: ${exportData.totalVotes}`, 20, 80);
     doc.text(`Voter Turnout: ${exportData.turnoutPercentage}%`, 20, 90);
-    doc.text(`Winner: ${exportData.winner}`, 20, 100);
+    
+    // Add winners for each position instead of single winner
+    let summaryY = 90;
+    doc.text('Position Winners:', 20, summaryY);
+    summaryY += 10;
+    
+    // Show top winner for each position
+    const positions = Object.keys(exportData.positionWinners);
+    for (let i = 0; i < Math.min(positions.length, 4); i++) { // Limit to first 4 positions to fit
+      const position = positions[i];
+      const winner = exportData.positionWinners[position];
+      doc.text(`${position}: ${winner.name}`, 25, summaryY);
+      summaryY += 8;
+    }
+    
+    if (positions.length > 4) {
+      doc.text(`... and ${positions.length - 4} more positions`, 25, summaryY);
+      summaryY += 8;
+    }
 
     // Add some spacing before candidates section
-    let yPosition = 115;
+    let yPosition = summaryY + 25;
 
     // Group candidates by position (as they should be in a school election)
-    const candidatesByPosition = {};
+    const candidatesByPositionForDisplay = {};
     exportData.candidates.forEach(candidate => {
-      if (!candidatesByPosition[candidate.position]) {
-        candidatesByPosition[candidate.position] = [];
+      if (!candidatesByPositionForDisplay[candidate.position]) {
+        candidatesByPositionForDisplay[candidate.position] = [];
       }
-      candidatesByPosition[candidate.position].push(candidate);
+      candidatesByPositionForDisplay[candidate.position].push(candidate);
     });
 
     // Add section for each position with proper spacing
-    for (const position in candidatesByPosition) {
+    for (const position in candidatesByPositionForDisplay) {
       // Add position title
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
@@ -117,7 +165,7 @@ const exportElectionResultsPDF = async (req, res) => {
       yPosition += 8;
 
       // Add candidate grid for this position
-      const positionCandidates = candidatesByPosition[position];
+      const positionCandidates = candidatesByPositionForDisplay[position];
       for (let i = 0; i < positionCandidates.length; i++) {
         const candidate = positionCandidates[i];
         
@@ -127,7 +175,7 @@ const exportElectionResultsPDF = async (req, res) => {
           yPosition = 20; // Start at top of new page
         }
 
-        // Add candidate image if available
+        // Add candidate image if available (add only the first 100x100px to save memory)
         if (candidate.image && candidate.image.startsWith('/')) {
           try {
             const imagePath = path.join(__dirname, "..", candidate.image);
@@ -136,7 +184,7 @@ const exportElectionResultsPDF = async (req, res) => {
               doc.addImage(imagePath, 'JPEG', 20, yPosition - 5, 10, 10);
             }
           } catch (e) {
-            console.log("Could not add candidate image:", e);
+            // Skip image if there's an error - don't break the PDF
           }
         }
 
@@ -177,19 +225,106 @@ const exportElectionResultsPDF = async (req, res) => {
 };
 
 /**
+ * Function to get election data for display (for HTML preview)
+ */
+const getElectionData = async () => {
+  try {
+    // Load data in parallel with optimized queries
+    const [students, candidates, voteLogs, election] = await Promise.all([
+      Student.countDocuments(), // Only get count instead of all documents
+      Candidate.find().sort({ votes: -1 }).select('name image votes position').lean(),
+      VoteLog.countDocuments(), // Only get count instead of all documents
+      Election.findOne()
+    ]);
+
+    // Calculate summary data - handle case where there are no votes
+    const totalVoters = students; // Now it's the count
+    const totalVotes = voteLogs; // Now it's the count
+    const turnoutPercentage = totalVoters > 0 
+      ? Math.round((totalVotes / totalVoters) * 100 * 100) / 100 
+      : 0;
+
+    // Find the winner - handle case where there are no votes
+    const winner = candidates.length > 0 && totalVotes > 0 ? candidates[0] : null;
+
+    // Prepare data for display
+    const displayData = {
+      electionName: election?.name || "Yeshua High School Election",
+      electionStatus: election?.status || "Ended",
+      startTime: election?.startTime ? new Date(election.startTime).toLocaleDateString() : "N/A",
+      endTime: election?.endTime ? new Date(election.endTime).toLocaleDateString() : "N/A",
+      totalVoters,
+      totalVotes,
+      turnoutPercentage,
+      candidates: candidates.map(candidate => {
+        // Calculate percentage for each candidate - handle case where there are no votes
+        const percentage = totalVotes > 0 
+          ? Math.round((candidate.votes / totalVotes) * 100 * 100) / 100 
+          : 0;
+        
+        return {
+          name: candidate.name,
+          image: candidate.image,
+          votes: candidate.votes,
+          percentage: percentage,
+          position: candidate.position
+        };
+      })
+    };
+
+    // Find winners for each position
+    const candidatesByPosition = {};
+    candidates.forEach(candidate => {
+      if (!candidatesByPosition[candidate.position]) {
+        candidatesByPosition[candidate.position] = [];
+      }
+      candidatesByPosition[candidate.position].push(candidate);
+    });
+
+    // Determine winner for each position (candidate with most votes in that position)
+    const positionWinners = {};
+    for (const position in candidatesByPosition) {
+      const positionCandidates = candidatesByPosition[position];
+      // Sort by votes descending and take the first one
+      positionCandidates.sort((a, b) => b.votes - a.votes);
+      if (positionCandidates.length > 0 && positionCandidates[0].votes > 0) {
+        positionWinners[position] = positionCandidates[0]; // The one with most votes
+      } else {
+        // Set placeholder for positions with no votes yet
+        positionWinners[position] = {
+          name: "No votes yet",
+          votes: 0,
+          percentage: 0
+        };
+      }
+    }
+
+    displayData.positionWinners = positionWinners;
+
+    return displayData;
+  } catch (err) {
+    console.error("Error getting election data:", err);
+    throw err;
+  }
+};
+
+/**
  * Function to generate PDF data for viewing (not attachment)
+ * This now returns the PDF as data URI string
  */
 const generatePDFData = async () => {
   try {
-    // Get all necessary data
-    const students = await Student.find();
-    const candidates = await Candidate.find().sort({ votes: -1 });
-    const voteLogs = await VoteLog.find();
-    const election = await Election.findOne();
+    // Load data in parallel with optimized queries
+    const [students, candidates, voteLogs, election] = await Promise.all([
+      Student.countDocuments(), // Only get count instead of all documents
+      Candidate.find().sort({ votes: -1 }).select('name image votes position').lean(),
+      VoteLog.countDocuments(), // Only get count instead of all documents
+      Election.findOne()
+    ]);
 
     // Calculate summary data - handle case where there are no votes
-    const totalVoters = students.length;
-    const totalVotes = voteLogs.length;
+    const totalVoters = students; // Now it's the count
+    const totalVotes = voteLogs; // Now it's the count
     const turnoutPercentage = totalVoters > 0 
       ? Math.round((totalVotes / totalVoters) * 100 * 100) / 100 
       : 0;
@@ -206,7 +341,6 @@ const generatePDFData = async () => {
       totalVoters,
       totalVotes,
       turnoutPercentage,
-      winner: winner ? winner.name : "No winner",
       candidates: candidates.map(candidate => {
         // Calculate percentage for each candidate - handle case where there are no votes
         const percentage = totalVotes > 0 
@@ -222,6 +356,35 @@ const generatePDFData = async () => {
         };
       })
     };
+
+    // Find winners for each position
+    const candidatesByPosition = {};
+    candidates.forEach(candidate => {
+      if (!candidatesByPosition[candidate.position]) {
+        candidatesByPosition[candidate.position] = [];
+      }
+      candidatesByPosition[candidate.position].push(candidate);
+    });
+
+    // Determine winner for each position (candidate with most votes in that position)
+    const positionWinners = {};
+    for (const position in candidatesByPosition) {
+      const positionCandidates = candidatesByPosition[position];
+      // Sort by votes descending and take the first one
+      positionCandidates.sort((a, b) => b.votes - a.votes);
+      if (positionCandidates.length > 0 && positionCandidates[0].votes > 0) {
+        positionWinners[position] = positionCandidates[0]; // The one with most votes
+      } else {
+        // Set placeholder for positions with no votes yet
+        positionWinners[position] = {
+          name: "No votes yet",
+          votes: 0,
+          percentage: 0
+        };
+      }
+    }
+
+    exportData.positionWinners = positionWinners;
 
     // Create PDF
     const doc = new jsPDF('p', 'mm', 'a4');
@@ -262,24 +425,42 @@ const generatePDFData = async () => {
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
     doc.text(`Total Voters: ${exportData.totalVoters}`, 20, 70);
-    doc.text(`Total Votes Cast: ${exportData.totalVotes}`, 20, 80);
+    doc.text(`Total Voted: ${exportData.totalVotes}`, 20, 80);
     doc.text(`Voter Turnout: ${exportData.turnoutPercentage}%`, 20, 90);
-    doc.text(`Winner: ${exportData.winner}`, 20, 100);
+    
+    // Add winners for each position instead of single winner
+    let summaryY = 90;
+    doc.text('Position Winners:', 20, summaryY);
+    summaryY += 10;
+    
+    // Show top winner for each position
+    const positions = Object.keys(exportData.positionWinners);
+    for (let i = 0; i < Math.min(positions.length, 4); i++) { // Limit to first 4 positions to fit
+      const position = positions[i];
+      const winner = exportData.positionWinners[position];
+      doc.text(`${position}: ${winner.name}`, 25, summaryY);
+      summaryY += 8;
+    }
+    
+    if (positions.length > 4) {
+      doc.text(`... and ${positions.length - 4} more positions`, 25, summaryY);
+      summaryY += 8;
+    }
 
     // Add some spacing before candidates section
-    let yPosition = 115;
+    let yPosition = summaryY + 25;
 
     // Group candidates by position (as they should be in a school election)
-    const candidatesByPosition = {};
+    const candidatesByPositionForDisplay = {};
     exportData.candidates.forEach(candidate => {
-      if (!candidatesByPosition[candidate.position]) {
-        candidatesByPosition[candidate.position] = [];
+      if (!candidatesByPositionForDisplay[candidate.position]) {
+        candidatesByPositionForDisplay[candidate.position] = [];
       }
-      candidatesByPosition[candidate.position].push(candidate);
+      candidatesByPositionForDisplay[candidate.position].push(candidate);
     });
 
     // Add section for each position with proper spacing
-    for (const position in candidatesByPosition) {
+    for (const position in candidatesByPositionForDisplay) {
       // Add position title
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
@@ -287,7 +468,7 @@ const generatePDFData = async () => {
       yPosition += 8;
 
       // Add candidate grid for this position
-      const positionCandidates = candidatesByPosition[position];
+      const positionCandidates = candidatesByPositionForDisplay[position];
       for (let i = 0; i < positionCandidates.length; i++) {
         const candidate = positionCandidates[i];
         
@@ -297,7 +478,7 @@ const generatePDFData = async () => {
           yPosition = 20; // Start at top of new page
         }
 
-        // Add candidate image if available
+        // Add candidate image if available (add only the first 100x100px to save memory)
         if (candidate.image && candidate.image.startsWith('/')) {
           try {
             const imagePath = path.join(__dirname, "..", candidate.image);
@@ -306,7 +487,7 @@ const generatePDFData = async () => {
               doc.addImage(imagePath, 'JPEG', 20, yPosition - 5, 10, 10);
             }
           } catch (e) {
-            console.log("Could not add candidate image:", e);
+            // Skip image if there's an error - don't break the PDF
           }
         }
 
@@ -337,12 +518,13 @@ const generatePDFData = async () => {
     // Return PDF data as data URI string
     return doc.output('datauristring');
   } catch (err) {
-    console.error("Error generating PDF data:", err);
+    console.error("Error generating PDF data for view:", err);
     throw err;
   }
 };
 
 module.exports = {
   exportElectionResultsPDF,
-  generatePDFData
+  generatePDFData,
+  getElectionData
 };
