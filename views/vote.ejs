@@ -13,16 +13,22 @@
 </head>
 
 <body class="bg-gray-50 font-sans flex flex-col min-h-screen">
+
+    <div class="bg-red-200 text-gray-700 text-center py-2 text-sm shadow-sm">
+        <% if (typeof user !== 'undefined' && user) { %>
+            Voting as: <span class="font-semibold"><%= user.studentId %></span>
+        <% } else { %>
+            Voting as: <span class="font-semibold">Student</span>
+        <% } %>
+    </div>
+
+    <!-- Main Header -->
     <header class="bg-gradient-to-r from-red-700 to-red-900 text-white py-8 shadow-md">
         <div class="container mx-auto max-w-7xl px-10 flex justify-between items-center">
             <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">Cast Your Vote</h1>
-            <div class="flex flex-col items-end">
-                <% if (typeof user !== 'undefined' && user) { %>
-                    <p class="text-red-200 text-sm md:text-base mb-1">Voting as: <%= user.studentId %></p>
-                <% } else { %>
-                    <p class="text-red-200 text-sm md:text-base mb-1">Voting as: Student</p>
-                <% } %>
-                <a href="/login" class="bg-white text-red-700 px-5 py-2 rounded-full shadow-md hover:bg-gray-100 transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50">
+            <div>
+                <a href="/login"
+                   class="bg-white text-red-700 px-5 py-2 rounded-full shadow-md hover:bg-gray-100 transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50">
                     Logout
                 </a>
             </div>
@@ -41,7 +47,11 @@
                         <div class="space-y-3">
                             <% groupedCandidates[position].forEach(candidate => { %>
                                 <label>
-                                    <input type="radio" name="<%= position.replace(/\s+/g, '_').toLowerCase() %>" value="<%= candidate._id %>" data-candidate-name="<%= candidate.name %>" data-position-name="<%= position %>" required>
+                                    <input type="radio" name="<%= position.replace(/\s+/g, '_').toLowerCase() %>"
+                                           value="<%= candidate._id %>"
+                                           data-candidate-name="<%= candidate.name %>"
+                                           data-position-name="<%= position %>"
+                                           required>
                                     <img src="<%= candidate.image %>" alt="<%= candidate.name %>">
                                     <span><%= candidate.name %></span>
                                 </label>
@@ -52,7 +62,8 @@
             </div>
 
             <div class="text-center mt-10">
-                <button type="button" id="reviewVoteBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-10 rounded-lg shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-red-300">
+                <button type="button" id="reviewVoteBtn"
+                        class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-10 rounded-lg shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-red-300">
                     Review My Vote
                 </button>
             </div>
@@ -67,7 +78,8 @@
                 <h3 class="text-2xl font-bold text-gray-800">Review Your Vote</h3>
                 <button id="closePanelBtn" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
                     <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
@@ -75,14 +87,18 @@
             <div id="voteSummary" class="mb-8 space-y-4"></div>
 
             <div class="space-y-3">
-                <button id="confirmVoteBtn" class="w-full bg-red-100 hover:bg-red-300 text-black font-semibold py-4 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center">
+                <button id="confirmVoteBtn"
+                        class="w-full bg-red-100 hover:bg-red-300 text-black font-semibold py-4 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center">
                     <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                        <path fill-rule="evenodd"
+                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                              clip-rule="evenodd"></path>
                     </svg>
                     Confirm & Submit Vote
                 </button>
 
-                <button id="cancelReviewBtn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-colors duration-200">
+                <button id="cancelReviewBtn"
+                        class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-colors duration-200">
                     Cancel
                 </button>
             </div>
@@ -104,10 +120,8 @@
 
     <script src="/js/vote.js"></script>
     <script>
-        // Update user display with server-provided data if available
         document.addEventListener('DOMContentLoaded', function() {
-            // If user data was passed from the server, update the display
-            // This is handled by EJS directly in the HTML now
+            // EJS handles user data display automatically
         });
     </script>
 </body>
