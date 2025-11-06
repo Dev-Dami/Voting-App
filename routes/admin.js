@@ -61,7 +61,11 @@ router.post("/login", async (req, res) => {
     const token = jwt.sign({ role: "admin" }, process.env.JWT_SECRET, {
       expiresIn: "2h",
     });
-    res.cookie("token", token);
+    res.cookie("token", token, { 
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 2 * 60 * 60 * 1000 // 2 hours
+    });
     res.redirect("/admin/dashboard");
   } catch (err) {
     console.error("Error logging in admin:", err);
@@ -72,23 +76,27 @@ router.post("/login", async (req, res) => {
 // admin dashboard
 router.get("/dashboard", verifyToken, isAdmin, async (req, res) => {
   try {
-    const candidates = await Candidate.find().sort({ votes: -1 });
-    const voteLogs = await VoteLog.find()
-      .populate("studentId", "studentId role")
-      .populate("candidateId", "name");
-    const students = await Student.find().sort({ studentId: 1 });
-    let election = await Election.findOne();
-    if (!election) {
-      election = new Election();
-      await election.save();
-    }
-    const positions = await Candidate.distinct("position");
+    // Load data in parallel with optimized queries
+    const [candidates, students, election, positions] = await Promise.all([
+      Candidate.find().sort({ votes: -1 }).lean(), // Use lean() to optimize
+      Student.find().select('studentId hasVoted isSuspended votedPositions').sort({ studentId: 1 }).lean(), // Only select needed fields
+      Election.findOne(),
+      Candidate.distinct("position")
+    ]);
 
+    // Only create election if doesn't exist
+    if (!election) {
+      const newElection = new Election();
+      await newElection.save();
+    }
+
+    // Don't load vote logs by default on dashboard - they're heavy
+    // Will load them separately when needed
     res.render("adminDashboard", {
       candidates,
-      voteLogs,
+      voteLogs: [], // Don't load by default
       students,
-      election,
+      election: election || newElection,
       positions,
     });
   } catch (err) {
@@ -339,8 +347,8 @@ router.get(
 // admin voters page - view all students and issues
 router.get("/voters", verifyToken, isAdmin, async (req, res) => {
   try {
-    const students = await Student.find().sort({ studentId: 1 });
-    const issues = await Issue.find().sort({ createdAt: -1 });
+    const students = await Student.find().select('studentId hasVoted isSuspended votedPositions createdAt').sort({ studentId: 1 }).lean();
+    const issues = await Issue.find().sort({ createdAt: -1 }).lean();
 
     res.render("adminVoters", {
       students,
@@ -485,6 +493,23 @@ router.get("/view-pdf", verifyToken, isAdmin, async (req, res) => {
       election: { status: "error" },
       positions: []
     });
+  }
+});
+
+// Load vote logs for dashboard (on demand)
+router.get("/vote-logs", verifyToken, isAdmin, async (req, res) => {
+  try {
+    const voteLogs = await VoteLog.find()
+      .populate("studentId", "studentId")
+      .populate("candidateId", "name position")
+      .sort({ createdAt: -1 })
+      .limit(50) // Limit to last 50 for performance
+      .lean();
+    
+    res.json(voteLogs);
+  } catch (err) {
+    console.error("Error loading vote logs:", err);
+    res.status(500).json({ message: "Error loading vote logs" });
   }
 });
 
