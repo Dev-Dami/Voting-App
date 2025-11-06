@@ -26,9 +26,6 @@ const exportElectionResultsPDF = async (req, res) => {
       ? Math.round((totalVotes / totalVoters) * 100 * 100) / 100 
       : 0;
 
-    // Find the winner - handle case where there are no votes
-    const winner = candidates.length > 0 && totalVotes > 0 ? candidates[0] : null;
-
     // Prepare data for PDF
     const exportData = {
       electionName: election?.name || "Yeshua High School Election",
@@ -88,9 +85,13 @@ const exportElectionResultsPDF = async (req, res) => {
 
     // Simple Header with school name, election title, and logo
     // Add logo if available
-    const logoPath = path.join(__dirname, "../public/images/logo.png");
-    if (fs.existsSync(logoPath)) {
-      doc.addImage(logoPath, 'PNG', 20, 15, 30, 30);
+    try {
+      const logoPath = path.join(__dirname, "../public/images/logo.png");
+      if (fs.existsSync(logoPath)) {
+        doc.addImage(logoPath, 'PNG', 20, 15, 30, 30);
+      }
+    } catch (e) {
+      // Skip logo if there's an error loading it
     }
 
     // School Name
@@ -329,9 +330,6 @@ const generatePDFData = async () => {
       ? Math.round((totalVotes / totalVoters) * 100 * 100) / 100 
       : 0;
 
-    // Find the winner - handle case where there are no votes
-    const winner = candidates.length > 0 && totalVotes > 0 ? candidates[0] : null;
-
     // Prepare data for PDF
     const exportData = {
       electionName: election?.name || "Yeshua High School Election",
@@ -391,9 +389,13 @@ const generatePDFData = async () => {
 
     // Simple Header with school name, election title, and logo
     // Add logo if available
-    const logoPath = path.join(__dirname, "../public/images/logo.png");
-    if (fs.existsSync(logoPath)) {
-      doc.addImage(logoPath, 'PNG', 20, 15, 30, 30);
+    try {
+      const logoPath = path.join(__dirname, "../public/images/logo.png");
+      if (fs.existsSync(logoPath)) {
+        doc.addImage(logoPath, 'PNG', 20, 15, 30, 30);
+      }
+    } catch (e) {
+      // Skip logo if there's an error loading it
     }
 
     // School Name
@@ -483,7 +485,7 @@ const generatePDFData = async () => {
           try {
             const imagePath = path.join(__dirname, "..", candidate.image);
             if (fs.existsSync(imagePath)) {
-              // Add image to the left of candidate name
+              // Add image to the left of candidate name - use JPEG format to avoid PNG issues
               doc.addImage(imagePath, 'JPEG', 20, yPosition - 5, 10, 10);
             }
           } catch (e) {
