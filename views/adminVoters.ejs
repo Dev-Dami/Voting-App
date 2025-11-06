@@ -12,6 +12,12 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+        .student-clickable {
+            transition: background-color 0.2s;
+        }
+        .student-clickable:hover {
+            background-color: #f8f9fa;
+        }
     </style>
 </head>
 <body class="bg-gray-50 font-sans min-h-screen">
@@ -33,31 +39,63 @@
         </div>
     </header>
 
-    <main class="container mx-auto p-6">
+    <!-- Search and Filter Controls -->
+    <div class="container mx-auto px-6 mt-4">
+        <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex-1">
+                    <input type="text" id="searchInput" placeholder="Search students by ID..." 
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                </div>
+                <div>
+                    <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <option value="">All Students</option>
+                        <option value="voted">Voted</option>
+                        <option value="not-voted">Not Voted</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students Table with Enhanced UI -->
+    <main class="container mx-auto p-6 mt-0">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Students List -->
             <div class="bg-white rounded-lg shadow-md p-6">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">All Voters</h2>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">All Voters (<span id="studentCount"><%= students.length %></span>)</h2>
+                </div>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200" id="studentsTable">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <% students.forEach(student => { %>
-                                <tr>
+                                <tr class="student-row" data-student-id="<%= student._id %>" data-student-name="<%= student.studentId %>">
+                                    <td class="px-6 py-4 whitespace-nowrap cursor-pointer student-clickable" data-student-id="<%= student._id %>">
+                                        <div class="text-sm font-medium text-red-700 hover:text-red-900"><%= student.studentId %></div>
+                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900"><%= student.studentId %></div>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                            <%= student.hasVoted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' %>">
+                                            <%= student.hasVoted ? 'Voted' : 'Not Voted' %>
+                                        </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <button data-student-id="<%= student._id %>" class="reset-password-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm mr-2">
                                             Reset Password
                                         </button>
+                                        <a href="/admin/student/<%= student._id %>" class="view-details-btn bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">
+                                            View Details
+                                        </a>
                                         <form action="/admin/students/delete/<%= student._id %>" method="POST" class="inline">
-                                            <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm" onclick="return confirm('Are you sure you want to delete this student?');">
+                                            <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm ml-2" onclick="return confirm('Are you sure you want to delete this student?');">
                                                 Delete
                                             </button>
                                         </form>
@@ -172,58 +210,6 @@
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Reset password functionality
-            const resetPasswordButtons = document.querySelectorAll('.reset-password-btn');
-            const resetPasswordModal = document.getElementById('resetPasswordModal');
-            const resetPasswordForm = document.getElementById('resetPasswordForm');
-            const cancelResetModalBtn = document.getElementById('cancel-reset-modal-btn');
-            const newResetPasswordInput = document.getElementById('newResetPassword');
-            const confirmResetPasswordInput = document.getElementById('confirmResetPassword');
-
-            resetPasswordButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const studentId = this.getAttribute('data-student-id');
-                    resetPasswordForm.action = `/admin/students/update-password/${studentId}`;
-                    resetPasswordModal.classList.remove('hidden');
-                });
-            });
-
-            // Close modal when cancel button is clicked
-            if (cancelResetModalBtn) {
-                cancelResetModalBtn.addEventListener('click', function() {
-                    resetPasswordModal.classList.add('hidden');
-                    resetPasswordForm.reset();
-                });
-            }
-
-            // Close modal when clicking outside the modal content
-            resetPasswordModal.addEventListener('click', function(e) {
-                if (e.target === resetPasswordModal) {
-                    resetPasswordModal.classList.add('hidden');
-                    resetPasswordForm.reset();
-                }
-            });
-
-            // Validate passwords match before submitting
-            resetPasswordForm.addEventListener('submit', function(e) {
-                const newPassword = newResetPasswordInput.value;
-                const confirmPassword = confirmResetPasswordInput.value;
-
-                if (newPassword !== confirmPassword) {
-                    e.preventDefault();
-                    alert('Passwords do not match!');
-                    return false;
-                }
-                
-                if (newPassword.length < 6) {
-                    e.preventDefault();
-                    alert('Password must be at least 6 characters long!');
-                    return false;
-                }
-            });
-        });
-    </script>
+    <script src="/js/adminVoters.js"></script>
 </body>
 </html>
