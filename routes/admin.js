@@ -77,11 +77,18 @@ router.post("/login", async (req, res) => {
 router.get("/dashboard", verifyToken, isAdmin, async (req, res) => {
   try {
     // Load data in parallel with optimized queries
-    const [candidates, students, election, positions] = await Promise.all([
+    const [candidates, students, election, positions, voteLogs, totalVoteCount] = await Promise.all([
       Candidate.find().sort({ votes: -1 }).lean(), // Use lean() to optimize
       Student.find().select('studentId hasVoted isSuspended votedPositions').sort({ studentId: 1 }).lean(), // Only select needed fields
       Election.findOne(),
-      Candidate.distinct("position")
+      Candidate.distinct("position"),
+      VoteLog.find()
+        .populate("studentId", "studentId")
+        .populate("candidateId", "name")
+        .sort({ createdAt: -1 })
+        .limit(10) // Limit for dashboard performance
+        .lean(),
+      VoteLog.countDocuments() // Get total count separately
     ]);
 
     // Only create election if doesn't exist
@@ -90,11 +97,10 @@ router.get("/dashboard", verifyToken, isAdmin, async (req, res) => {
       await newElection.save();
     }
 
-    // Don't load vote logs by default on dashboard - they're heavy
-    // Will load them separately when needed
     res.render("adminDashboard", {
       candidates,
-      voteLogs: [], // Don't load by default
+      voteLogs,
+      voteLogsCount: totalVoteCount, // Pass total count separately
       students,
       election: election || newElection,
       positions,

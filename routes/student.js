@@ -220,6 +220,15 @@ module.exports = (io) => {
         }
       }
 
+      // Emit vote_cast event for real-time dashboard updates
+      for (const voteLog of populatedVoteLogs) {
+        io.emit("vote_cast", {
+          studentId: voteLog.studentId ? voteLog.studentId.studentId : "Unknown",
+          candidateName: voteLog.candidateId ? voteLog.candidateId.name : "Deleted Candidate",
+          createdAt: voteLog.createdAt
+        });
+      }
+
       res.redirect("/slip");
     } catch (err) {
       await session.abortTransaction();
