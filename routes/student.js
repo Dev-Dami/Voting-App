@@ -85,6 +85,14 @@ module.exports = (io) => {
       }
 
       const student = await Student.findById(req.user.id);
+      if (!student) {
+        return res.status(404).send("Student not found");
+      }
+      
+      if (student.isSuspended) {
+        return res.render("suspended", { student });
+      }
+      
       if (student.hasVoted) return res.redirect("/slip");
 
       // fetch all candidates
@@ -123,6 +131,12 @@ module.exports = (io) => {
         await session.abortTransaction();
         session.endSession();
         return res.status(404).send("Student not found");
+      }
+
+      if (student.isSuspended) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.render("suspended", { student });
       }
 
       if (student.hasVoted) {

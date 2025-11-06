@@ -83,8 +83,8 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                            <%= student.hasVoted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' %>">
-                                            <%= student.hasVoted ? 'Voted' : 'Not Voted' %>
+                                            <%= student.hasVoted ? (student.isSuspended ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800') : (student.isSuspended ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800') %>">
+                                            <%= student.isSuspended ? 'Suspended' : (student.hasVoted ? 'Voted' : 'Not Voted') %>
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
@@ -98,6 +98,19 @@
                                         <form action="/admin/student/<%= student._id %>/reset-votes" method="POST" class="inline">
                                             <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm ml-2" onclick="return confirm('Are you sure you want to reset the votes for this student?');">
                                                 Reset Vote
+                                            </button>
+                                        </form>
+                                        <% } %>
+                                        <% if (student.isSuspended) { %>
+                                        <form action="/admin/student/<%= student._id %>/enable" method="POST" class="inline">
+                                            <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm ml-2" onclick="return confirm('Are you sure you want to enable this student?');">
+                                                Enable
+                                            </button>
+                                        </form>
+                                        <% } else { %>
+                                        <form action="/admin/student/<%= student._id %>/suspend" method="POST" class="inline">
+                                            <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm ml-2" onclick="return confirm('Are you sure you want to suspend this student?');">
+                                                Suspend
                                             </button>
                                         </form>
                                         <% } %>
