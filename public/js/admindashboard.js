@@ -25,35 +25,40 @@ if (electionEndTimeInput) {
 }
 
 // Election Timer
-const electionStatus = "<%= election.status %>";
-const electionEndTime = "<%= election.endTime %>";
-const countdownElement = document.getElementById("countdown");
+const scriptData = document.getElementById("ejs-data");
+if (scriptData) {
+  const data = JSON.parse(scriptData.textContent);
+  const election = data.election;
+  const electionStatus = election.status;
+  const electionEndTime = election.endTime;
+  const countdownElement = document.getElementById("countdown");
 
-if (electionStatus === "running" && electionEndTime && countdownElement) {
-  const endTime = new Date(electionEndTime).getTime();
+  if (electionStatus === "running" && electionEndTime && countdownElement) {
+    const endTime = new Date(electionEndTime).getTime();
 
-  function updateTimer() {
-    const now = new Date().getTime();
-    const distance = endTime - now;
+    function updateTimer() {
+      const now = new Date().getTime();
+      const distance = endTime - now;
 
-    if (distance < 0) {
-      countdownElement.textContent = "00:00:00";
-      clearInterval(timerInterval);
-      // Optionally, refresh the page or update status via AJAX
-      return;
+      if (distance < 0) {
+        countdownElement.textContent = "00:00:00";
+        clearInterval(timerInterval);
+        // Optionally, refresh the page or update status via AJAX
+        return;
+      }
+
+      const hours = Math.floor(
+        (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+      );
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      countdownElement.textContent = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
     }
 
-    const hours = Math.floor(
-      (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-    );
-    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-    countdownElement.textContent = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    updateTimer(); // Initial call
+    const timerInterval = setInterval(updateTimer, 1000);
   }
-
-  updateTimer(); // Initial call
-  const timerInterval = setInterval(updateTimer, 1000);
 }
 
 // Socket.IO for real-time vote updates
@@ -162,4 +167,19 @@ document.addEventListener('DOMContentLoaded', function() {
       return false;
     }
   });
+});
+
+// Export data functionality
+document.addEventListener('DOMContentLoaded', function() {
+  const exportDataBtn = document.getElementById('export-data-btn');
+  
+  if (exportDataBtn) {
+    exportDataBtn.addEventListener('click', function() {
+      // Show a confirmation dialog
+      if (confirm('Are you sure you want to export all voting data? This may take a moment.')) {
+        // Redirect to the export endpoint
+        window.location.href = '/admin/export-data';
+      }
+    });
+  }
 });

@@ -385,6 +385,80 @@ router.post("/issues/:id/status", verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+// Suspend a student
+router.post(
+  "/student/:id/suspend",
+  verifyToken,
+  isAdmin,
+  async (req, res) => {
+    try {
+      const student = await Student.findById(req.params.id);
+      if (!student) {
+        return res.status(404).send("Student not found");
+      }
+
+      student.isSuspended = true;
+      await student.save();
+      
+      res.redirect("/admin/voters");
+    } catch (err) {
+      console.error("Error suspending student:", err);
+      res.status(500).json({ message: "Error suspending student" });
+    }
+  },
+);
+
+// Enable a suspended student 
+router.post(
+  "/student/:id/enable",
+  verifyToken,
+  isAdmin,
+  async (req, res) => {
+    try {
+      const student = await Student.findById(req.params.id);
+      if (!student) {
+        return res.status(404).send("Student not found");
+      }
+
+      student.isSuspended = false;
+      await student.save();
+      
+      res.redirect("/admin/voters");
+    } catch (err) {
+      console.error("Error enabling student:", err);
+      res.status(500).json({ message: "Error enabling student" });
+    }
+  },
+);
+
+// Export data functionality
+router.get("/export-data", verifyToken, isAdmin, async (req, res) => {
+  try {
+    // Get all students, candidates, vote logs, and election info
+    const students = await Student.find().select('-password');
+    const candidates = await Candidate.find();
+    const voteLogs = await VoteLog.find()
+      .populate('studentId', 'studentId')
+      .populate('candidateId', 'name position');
+    const election = await Election.findOne();
+
+    const exportData = {
+      students,
+      candidates,
+      voteLogs,
+      election,
+      exportedAt: new Date()
+    };
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename=vote-export-${Date.now()}.json`);
+    res.json(exportData);
+  } catch (err) {
+    console.error("Error exporting data:", err);
+    res.status(500).json({ message: "Error exporting data" });
+  }
+});
+
 // Reset votes for a single student
 router.post(
   "/student/:id/reset-votes",

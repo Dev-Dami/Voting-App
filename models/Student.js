@@ -8,7 +8,6 @@ const StudentSchema = new mongoose.Schema(
       required: true,
       unique: true,
       trim: true,
-      index: true,
     },
     password: {
       type: String,
@@ -20,6 +19,10 @@ const StudentSchema = new mongoose.Schema(
       default: "student",
     },
     hasVoted: {
+      type: Boolean,
+      default: false,
+    },
+    isSuspended: {
       type: Boolean,
       default: false,
     },
