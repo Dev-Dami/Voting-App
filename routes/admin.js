@@ -478,24 +478,6 @@ router.get("/export-pdf", verifyToken, isAdmin, async (req, res) => {
   }
 });
 
-// View PDF preview
-router.get("/view-pdf", verifyToken, isAdmin, async (req, res) => {
-  try {
-    const pdfData = await generatePDFData();
-    res.render("pdfPreview", { pdfData });
-  } catch (err) {
-    console.error("Error generating PDF preview:", err);
-    res.status(500).render("adminDashboard", { 
-      message: "Error generating PDF preview",
-      students: [],
-      candidates: [],
-      voteLogs: [],
-      election: { status: "error" },
-      positions: []
-    });
-  }
-});
-
 // Load vote logs for dashboard (on demand)
 router.get("/vote-logs", verifyToken, isAdmin, async (req, res) => {
   try {
@@ -510,6 +492,25 @@ router.get("/vote-logs", verifyToken, isAdmin, async (req, res) => {
   } catch (err) {
     console.error("Error loading vote logs:", err);
     res.status(500).json({ message: "Error loading vote logs" });
+  }
+});
+
+// View PDF preview (HTML version)
+router.get("/view-pdf", verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { getElectionData } = require("../middleware/Dataexports");
+    const electionData = await getElectionData();
+    res.render("pdfPreview", { electionData });
+  } catch (err) {
+    console.error("Error generating PDF preview:", err);
+    res.status(500).render("adminDashboard", { 
+      message: "Error generating PDF preview",
+      students: [],
+      candidates: [],
+      voteLogs: [],
+      election: { status: "error" },
+      positions: []
+    });
   }
 });
 
