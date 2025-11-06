@@ -4,6 +4,7 @@ const path = require("path");
 const helmet = require("helmet"); // For security headers
 const rateLimit = require("express-rate-limit"); // For rate limiting
 const { verifyToken } = require("./middleware/auth");
+const imageOptimizer = require("./middleware/imageOptimizer");
 require("dotenv").config();
 const os = require("os");
 
@@ -55,6 +56,7 @@ app.set("views", path.join(__dirname, "views"));
 
 connectDB();
 //static files
+app.use(imageOptimizer);
 app.use("/", express.static(path.join(__dirname, "public")));
 app.use(
   "/chart.js",

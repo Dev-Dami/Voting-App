@@ -130,25 +130,27 @@ router.post(
   async (req, res) => {
     try {
       const { password, confirmPassword } = req.body;
-      
+
       // Validate passwords match
       if (password !== confirmPassword) {
         return res.status(400).json({ message: "Passwords do not match" });
       }
-      
+
       // Validate password length
       if (password.length < 6) {
-        return res.status(400).json({ message: "Password must be at least 6 characters long" });
+        return res
+          .status(400)
+          .json({ message: "Password must be at least 6 characters long" });
       }
-      
+
       const student = await Student.findById(req.params.id);
       if (!student) {
         return res.status(404).send("Student not found");
       }
-      
+
       student.password = password;
       await student.save();
-      
+
       // Redirect with success message (if needed)
       res.redirect("/admin/dashboard");
     } catch (err) {
@@ -266,6 +268,8 @@ router.post("/election/reset", verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+// reset users
+
 // detailed votes for a candidate
 router.get("/candidate/:id/votes", verifyToken, isAdmin, async (req, res) => {
   try {
@@ -336,10 +340,10 @@ router.get("/voters", verifyToken, isAdmin, async (req, res) => {
   try {
     const students = await Student.find().sort({ studentId: 1 });
     const issues = await Issue.find().sort({ createdAt: -1 });
-    
+
     res.render("adminVoters", {
       students,
-      issues
+      issues,
     });
   } catch (err) {
     console.error("Error loading voters page:", err);
@@ -347,16 +351,32 @@ router.get("/voters", verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+/* reset users
+router.get("/reset", verifyToken, isAdmin, async (req, res) => {
+  try {
+    await Student.deleteMany({});
+    await Issue.deleteMany({});
+    await VoteLog.deleteMany({});
+    await Candidate.deleteMany({});
+    await User.deleteMany({});
+
+    res.redirect("/admin/voters");
+  } catch (err) {
+    console.error("Error resetting users:", err);
+    res.status(500).json({ message: "Error resetting users" });
+  }
+  }); */
+
 // Update issue status
 router.post("/issues/:id/status", verifyToken, isAdmin, async (req, res) => {
   try {
     const { status } = req.body;
-    const validStatuses = ['pending', 'in-progress', 'resolved'];
-    
+    const validStatuses = ["pending", "in-progress", "resolved"];
+
     if (!validStatuses.includes(status)) {
       return res.status(400).send("Invalid status");
     }
-    
+
     await Issue.findByIdAndUpdate(req.params.id, { status });
     res.redirect("/admin/voters");
   } catch (err) {
@@ -364,6 +384,46 @@ router.post("/issues/:id/status", verifyToken, isAdmin, async (req, res) => {
     res.status(500).json({ message: "Error updating issue status" });
   }
 });
+
+// Reset votes for a single student
+router.post(
+  "/student/:id/reset-votes",
+  verifyToken,
+  isAdmin,
+  async (req, res) => {
+    try {
+      const studentId = req.params.id;
+      const student = await Student.findById(studentId);
+
+      if (!student || !student.hasVoted) {
+        return res.redirect("/admin/voters");
+      }
+
+      // Find all vote logs for the student
+      const studentVotes = await VoteLog.find({ studentId: student._id });
+
+      // Decrement vote counts for candidates
+      for (const vote of studentVotes) {
+        await Candidate.findByIdAndUpdate(vote.candidateId, {
+          $inc: { votes: -1 },
+        });
+      }
+
+      // Delete the student's vote logs
+      await VoteLog.deleteMany({ studentId: student._id });
+
+      // Reset the student's voting status
+      student.hasVoted = false;
+      student.votedPositions = [];
+      await student.save();
+
+      res.redirect("/admin/voters");
+    } catch (err) {
+      console.error("Error resetting student votes:", err);
+      res.status(500).json({ message: "Error resetting student votes" });
+    }
+  },
+);
 
 // Test charts page
 router.get("/test-charts", verifyToken, isAdmin, async (req, res) => {
