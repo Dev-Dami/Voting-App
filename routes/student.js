@@ -6,6 +6,7 @@ const Student = require("../models/Student");
 const Candidate = require("../models/Candidate");
 const VoteLog = require("../models/voteLogs");
 const Election = require("../models/Election");
+const Issue = require("../models/Issue");
 const { verifyToken } = require("../middleware/auth");
 
 const isStudent = (req, res, next) => {
@@ -214,6 +215,39 @@ module.exports = (io) => {
     } catch (err) {
       console.error("Error loading vote slip:", err);
       res.status(500).json({ message: "Error loading vote slip" });
+    }
+  });
+
+  // Submit issue route
+  router.post("/submit-issue", async (req, res) => {
+    try {
+      const { name, className, problem } = req.body;
+      
+      if (!name || !className || !problem) {
+        return res.status(400).send("All fields are required");
+      }
+      
+      const issue = new Issue({
+        name,
+        className,
+        problem
+      });
+      
+      await issue.save();
+      
+      // Redirect back to login page with success message
+      res.render("login", {
+        schoolLogo: process.env.SCHOOL_LOGO || "/images/logo.png",
+        schoolName: process.env.SCHOOL_NAME || "Yeshua High School",
+        errorMessage: "Issue submitted successfully. Admin will review it shortly.",
+      });
+    } catch (err) {
+      console.error("Error submitting issue:", err);
+      res.render("login", {
+        schoolLogo: process.env.SCHOOL_LOGO || "/images/logo.png",
+        schoolName: process.env.SCHOOL_NAME || "Yeshua High School",
+        errorMessage: "Error submitting issue. Please try again.",
+      });
     }
   });
 
