@@ -31,6 +31,21 @@ const getElectionData = async () => {
     // Find the winner - handle case where there are no votes
     const winner = candidates.length > 0 && totalVotes > 0 ? candidates[0] : null;
 
+    // Group candidates by position to calculate percentages correctly
+    const candidatesByPosition = {};
+    candidates.forEach(candidate => {
+      if (!candidatesByPosition[candidate.position]) {
+        candidatesByPosition[candidate.position] = [];
+      }
+      candidatesByPosition[candidate.position].push(candidate);
+    });
+
+    // Calculate total votes per position for percentage calculation
+    const positionTotalVotes = {};
+    for (const position in candidatesByPosition) {
+      positionTotalVotes[position] = candidatesByPosition[position].reduce((sum, candidate) => sum + candidate.votes, 0);
+    }
+
     // Prepare data for display
     const displayData = {
       electionName: election?.name || "Yeshua High School Election",
@@ -41,9 +56,10 @@ const getElectionData = async () => {
       totalVotes,
       turnoutPercentage,
       candidates: candidates.map(candidate => {
-        // Calculate percentage for each candidate - handle case where there are no votes
-        const percentage = totalVotes > 0 
-          ? Math.round((candidate.votes / totalVotes) * 100 * 100) / 100 
+        // Calculate percentage for each candidate based on votes for their position - handle case where there are no votes for this position
+        const positionTotal = positionTotalVotes[candidate.position] || 0;
+        const percentage = positionTotal > 0 
+          ? Math.round((candidate.votes / positionTotal) * 100 * 100) / 100 
           : 0;
         
         return {
@@ -57,18 +73,18 @@ const getElectionData = async () => {
     };
 
     // Find winners for each position
-    const candidatesByPosition = {};
+    const candidatesByPositionDisplay = {};
     candidates.forEach(candidate => {
-      if (!candidatesByPosition[candidate.position]) {
-        candidatesByPosition[candidate.position] = [];
+      if (!candidatesByPositionDisplay[candidate.position]) {
+        candidatesByPositionDisplay[candidate.position] = [];
       }
-      candidatesByPosition[candidate.position].push(candidate);
+      candidatesByPositionDisplay[candidate.position].push(candidate);
     });
 
     // Determine winner for each position (candidate with most votes in that position)
     const positionWinners = {};
-    for (const position in candidatesByPosition) {
-      const positionCandidates = candidatesByPosition[position];
+    for (const position in candidatesByPositionDisplay) {
+      const positionCandidates = candidatesByPositionDisplay[position];
       // Sort by votes descending and take the first one
       positionCandidates.sort((a, b) => b.votes - a.votes);
       if (positionCandidates.length > 0 && positionCandidates[0].votes > 0) {
@@ -113,6 +129,21 @@ const generatePDFData = async () => {
       ? Math.round((totalVotes / totalVoters) * 100 * 100) / 100 
       : 0;
 
+    // Group candidates by position to calculate percentages correctly for PDF
+    const candidatesByPositionPDF = {};
+    candidates.forEach(candidate => {
+      if (!candidatesByPositionPDF[candidate.position]) {
+        candidatesByPositionPDF[candidate.position] = [];
+      }
+      candidatesByPositionPDF[candidate.position].push(candidate);
+    });
+
+    // Calculate total votes per position for percentage calculation in PDF
+    const positionTotalVotesPDF = {};
+    for (const position in candidatesByPositionPDF) {
+      positionTotalVotesPDF[position] = candidatesByPositionPDF[position].reduce((sum, candidate) => sum + candidate.votes, 0);
+    }
+
     // Prepare data for PDF
     const exportData = {
       electionName: election?.name || "Yeshua High School Election",
@@ -123,9 +154,10 @@ const generatePDFData = async () => {
       totalVotes,
       turnoutPercentage,
       candidates: candidates.map(candidate => {
-        // Calculate percentage for each candidate - handle case where there are no votes
-        const percentage = totalVotes > 0 
-          ? Math.round((candidate.votes / totalVotes) * 100 * 100) / 100 
+        // Calculate percentage for each candidate based on votes for their position - handle case where there are no votes for this position
+        const positionTotal = positionTotalVotesPDF[candidate.position] || 0;
+        const percentage = positionTotal > 0 
+          ? Math.round((candidate.votes / positionTotal) * 100 * 100) / 100 
           : 0;
         
         return {
@@ -138,19 +170,19 @@ const generatePDFData = async () => {
       })
     };
 
-    // Find winners for each position
-    const candidatesByPosition = {};
+    // Find winners for each position - use different variable name to avoid conflict
+    const candidatesByPositionWinners = {};
     candidates.forEach(candidate => {
-      if (!candidatesByPosition[candidate.position]) {
-        candidatesByPosition[candidate.position] = [];
+      if (!candidatesByPositionWinners[candidate.position]) {
+        candidatesByPositionWinners[candidate.position] = [];
       }
-      candidatesByPosition[candidate.position].push(candidate);
+      candidatesByPositionWinners[candidate.position].push(candidate);
     });
 
     // Determine winner for each position (candidate with most votes in that position)
     const positionWinners = {};
-    for (const position in candidatesByPosition) {
-      const positionCandidates = candidatesByPosition[position];
+    for (const position in candidatesByPositionWinners) {
+      const positionCandidates = candidatesByPositionWinners[position];
       // Sort by votes descending and take the first one
       positionCandidates.sort((a, b) => b.votes - a.votes);
       if (positionCandidates.length > 0 && positionCandidates[0].votes > 0) {
@@ -170,6 +202,11 @@ const generatePDFData = async () => {
     // Create PDF
     const doc = new jsPDF('p', 'mm', 'a4');
 
+    // Reset to normal settings for content (watermark will be added at the end to each page)
+    doc.setTextColor(0, 0, 0); // Black for normal text
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    
     // Simple Header with school name, election title, and logo
     // Add logo if available
     try {
@@ -260,6 +297,29 @@ const generatePDFData = async () => {
         // Check if we need a new page
         if (yPosition > 270) {
           doc.addPage();
+          
+          // Add watermark to the new page
+          const pageWidth = doc.internal.pageSize.width;
+          const pageHeight = doc.internal.pageSize.height;
+          
+          // Save current settings
+          const currentTextColor = doc.getTextColor();
+          const currentFontSize = doc.getFontSize();
+          const currentFont = doc.getFont();
+          
+          // Draw watermark on new page
+          doc.setFontSize(80);
+          doc.setTextColor(220, 220, 220); // Light gray
+          doc.text("Yeshua Election Board", pageWidth/2, pageHeight/2, {
+              align: "center",
+              angle: 45
+          });
+          
+          // Restore original settings
+          doc.setTextColor(currentTextColor);
+          doc.setFontSize(currentFontSize);
+          doc.setFont(currentFont.fontName, currentFont.fontStyle);
+          
           yPosition = 20; // Start at top of new page
         }
 
@@ -306,6 +366,30 @@ const generatePDFData = async () => {
     doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, footerY);
     doc.text('Yeshua Voting Board', pageWidth/2, footerY, null, null, 'center');
     doc.text('(made by Yeshua voting board)', pageWidth - 20, footerY, null, null, 'right');
+
+    // Add watermark to all pages at the very end after all content
+    const totalPages = doc.internal.getNumberOfPages();
+    const originalPage = doc.internal.getCurrentPageInfo().pageNumber;
+    
+    for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        
+        // Set watermark style
+        doc.setTextColor(220, 220, 220); // Light gray
+        doc.setFontSize(80);
+        
+        // Draw the watermark text diagonally across the page
+        const centerX = pageWidth / 2;
+        const centerY = doc.internal.pageSize.height / 2;
+        
+        doc.text("Yeshua Election Board", centerX, centerY, {
+            align: "center",
+            angle: 45
+        });
+    }
+    
+    // Return to the original page
+    doc.setPage(originalPage);
 
     // Return PDF data as data URI string
     return doc.output('datauristring');
