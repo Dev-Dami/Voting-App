@@ -86,7 +86,6 @@ router.get("/dashboard", verifyToken, isAdmin, async (req, res) => {
         .populate("studentId", "studentId")
         .populate("candidateId", "name")
         .sort({ createdAt: -1 })
-        .limit(10) // Limit for dashboard performance
         .lean(),
       VoteLog.countDocuments() // Get total count separately
     ]);

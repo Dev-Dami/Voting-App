@@ -200,12 +200,51 @@
                 </div>
 
                 <div class="bg-white rounded-lg shadow-md p-6 overflow-y-auto">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">Recent Voting Activity</h2>
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-gray-800">Recent Voting Activity</h2>
+                        <div class="relative" id="userFilterDropdown">
+                            <button id="userFilterButton" 
+                                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg text-center focusable flex items-center"
+                                    aria-haspopup="true" 
+                                    aria-expanded="false"
+                                    aria-controls="userFilterMenu">
+                                <span>Filter by User</span>
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="userFilterMenu" 
+                                 class="hidden absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto"
+                                 role="menu" 
+                                 aria-labelledby="userFilterButton">
+                                <div class="p-2">
+                                    <input type="text" id="userFilterSearch" placeholder="Search users..." 
+                                           class="w-full p-2 border border-gray-300 rounded mb-2 focusable"
+                                           aria-label="Search users to filter by">
+                                    <div id="userFilterOptions">
+                                        <a href="#" data-user-id="" 
+                                           class="block px-4 py-2 text-gray-800 hover:bg-gray-100 border-b border-gray-100 last:border-0 focusable filter-user-option active-filter"
+                                           role="menuitem">All Users</a>
+                                        <% students.forEach(student => { %>
+                                            <a href="#" data-user-id="<%= student._id %>" 
+                                               class="block px-4 py-2 text-gray-800 hover:bg-gray-100 border-b border-gray-100 last:border-0 focusable filter-user-option"
+                                               role="menuitem">
+                                                <%= student.studentId %> 
+                                                <span class="text-xs text-gray-500">
+                                                    (<%= student.hasVoted ? 'Voted' : 'Not Voted' %>)
+                                                </span>
+                                            </a>
+                                        <% }) %>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="space-y-3" id="votingActivityList">
                         <% 
                             // Group vote logs by student
                             const votesByStudent = {};
-                            voteLogs.slice(0, 10).forEach(log => {
+                            voteLogs.forEach(log => {
                                 const studentId = log.studentId ? log.studentId._id : 'unknown';
                                 const studentName = log.studentId ? log.studentId.studentId : 'Unknown';
                                 
@@ -217,10 +256,13 @@
                                 }
                                 votesByStudent[studentId].votes.push(log);
                             });
+                            
+                            // Get all students for display (no longer limited)
+                            const studentIds = Object.keys(votesByStudent);
                         %>
                         
-                        <% Object.keys(votesByStudent).forEach(studentId => { %>
-                            <div class="bg-gray-50 rounded-lg">
+                        <% studentIds.forEach(studentId => { %>
+                            <div class="bg-gray-50 rounded-lg vote-log-item" data-student-id="<%= studentId %>">
                                 <div class="p-3 border-b border-gray-200 cursor-pointer flex justify-between items-center student-vote-header" data-student-id="<%= studentId %>">
                                     <div>
                                         <p class="font-medium text-gray-800 flex items-center">
@@ -252,6 +294,11 @@
                                 </div>
                             </div>
                         <% }) %>
+                    </div>
+                    
+                    <!-- Show all votes without pagination -->
+                    <div class="text-center text-gray-500 text-sm mt-4">
+                        Showing all <%= Object.keys(votesByStudent).length %> voter<%= Object.keys(votesByStudent).length !== 1 ? 's' : '' %>
                     </div>
                 </div>
             </div>
@@ -502,7 +549,7 @@
     </script>
     
     <script>
-        // Initialize dropdown functionality
+        // Initialize dropdown and pagination functionality
         document.addEventListener('DOMContentLoaded', function() {
             const quickActionsButton = document.getElementById('quickActionsButton');
             const quickActionsMenu = document.getElementById('quickActionsMenu');
@@ -543,6 +590,10 @@
             const userFilterSearch = document.getElementById('userFilterSearch');
             const filterUserOptions = document.querySelectorAll('.filter-user-option');
             const votingActivityList = document.getElementById('votingActivityList');
+
+            
+            // Variables to track pagination state
+
             
             // Toggle user filter dropdown
             userFilterButton.addEventListener('click', function() {
@@ -583,7 +634,7 @@
                         </svg>
                     `;
                     
-                    // Filter vote logs
+                    // Filter vote logs based on the selected user
                     filterVoteLogs(selectedUserId);
                     
                     // Close dropdown
@@ -611,16 +662,27 @@
             function filterVoteLogs(userId) {
                 const voteLogItems = document.querySelectorAll('.vote-log-item');
                 
-                voteLogItems.forEach(item => {
-                    const itemUserId = item.getAttribute('data-student-id');
-                    
-                    if (userId === '' || itemUserId === userId) {
+                // Show all if 'All Users' selected (empty userId)
+                if (userId === '') {
+                    voteLogItems.forEach(item => {
                         item.style.display = 'block';
-                    } else {
-                        item.style.display = 'none';
-                    }
-                });
+                    });
+                } else {
+                    voteLogItems.forEach(item => {
+                        const itemUserId = item.getAttribute('data-student-id');
+                        if (itemUserId === userId) {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                }
             }
+            
+
+
+            
+
             
             // Initialize WebSocket connection
             const socket = io();
@@ -669,8 +731,10 @@
                         const voteCountElement = studentSection.querySelector('.text-xs.text-gray-500');
                         
                         // Update vote count
-                        const currentCount = parseInt(voteCountElement.textContent);
-                        voteCountElement.textContent = (currentCount + 1) + ' vote' + ((currentCount + 1) > 1 ? 's' : '');
+                        const voteCountText = voteCountElement.textContent;
+                        const currentCount = parseInt(voteCountText.match(/\d+/)[0]); // Extract the number
+                        const voteText = currentCount + 1 > 1 ? 'votes' : 'vote';
+                        voteCountElement.textContent = (currentCount + 1) + ' ' + voteText;
                         
                         // Add new vote to the details
                         const voteDetailHtml = `
@@ -686,7 +750,7 @@
                     } else {
                         // Create new student section
                         const studentSectionHtml = `
-                            <div class="bg-gray-50 rounded-lg">
+                            <div class="bg-gray-50 rounded-lg vote-log-item" data-student-id="${voteData.studentId || 'unknown'}">
                                 <div class="p-3 border-b border-gray-200 cursor-pointer flex justify-between items-center student-vote-header" data-student-id="${voteData.studentId || 'unknown'}">
                                     <div>
                                         <p class="font-medium text-gray-800 flex items-center">
@@ -714,12 +778,7 @@
                         votingActivityContainer.insertAdjacentHTML('afterbegin', studentSectionHtml);
                     }
                     
-                    // Limit to 10 student sections total
-                    const allStudentSections = votingActivityContainer.querySelectorAll('.bg-gray-50.rounded-lg');
-                    if (allStudentSections.length > 10) {
-                        // Remove the last section
-                        votingActivityContainer.removeChild(allStudentSections[allStudentSections.length - 1]);
-                    }
+
                 }
             }
         });
