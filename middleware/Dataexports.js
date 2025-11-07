@@ -367,29 +367,24 @@ const generatePDFData = async () => {
     doc.text('Yeshua Voting Board', pageWidth/2, footerY, null, null, 'center');
     doc.text('(made by Yeshua voting board)', pageWidth - 20, footerY, null, null, 'right');
 
-    // Add watermark to all pages at the very end after all content
-    const totalPages = doc.internal.getNumberOfPages();
-    const originalPage = doc.internal.getCurrentPageInfo().pageNumber;
+    // Add watermark to the first page now (since content has been added)
+    // Save current settings
+    const originalTextColor = doc.getTextColor();
+    const originalFontSize = doc.getFontSize();
+    const originalFont = doc.getFont();
     
-    for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        
-        // Set watermark style
-        doc.setTextColor(220, 220, 220); // Light gray
-        doc.setFontSize(80);
-        
-        // Draw the watermark text diagonally across the page
-        const centerX = pageWidth / 2;
-        const centerY = doc.internal.pageSize.height / 2;
-        
-        doc.text("Yeshua Election Board", centerX, centerY, {
-            align: "center",
-            angle: 45
-        });
-    }
+    // Draw watermark on first page
+    doc.setFontSize(80);
+    doc.setTextColor(220, 220, 220); // Light gray
+    doc.text("Yeshua Election Board", pageWidth/2, doc.internal.pageSize.height/2, {
+        align: "center",
+        angle: 45
+    });
     
-    // Return to the original page
-    doc.setPage(originalPage);
+    // Restore original settings
+    doc.setTextColor(originalTextColor);
+    doc.setFontSize(originalFontSize);
+    doc.setFont(originalFont.fontName, originalFont.fontStyle);
 
     // Return PDF data as data URI string
     return doc.output('datauristring');
